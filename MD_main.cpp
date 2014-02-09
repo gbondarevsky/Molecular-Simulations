@@ -6,8 +6,15 @@
 
 using namespace std;
 
+//Constants
+const float r = 3.5; //Distance from one particle to another
+const float rh = r/2.0;
+const int N = 216; //Number of particles
+const int Nmax = N/3; //Maximum number of particles per plane
+const int xmax = 18; //Number of particles with unique x values in a single plane [Ask Gary].
+
 //Global Variables
-float coords[216][3];
+float coords[N][3];
 
 //Function Prototypes
 int genCoords();
@@ -15,9 +22,9 @@ int genCoords();
 
 int main(){
 	genCoords();
-	cout << 216 << "\n";
+	cout << N << "\n";
 	cout << "#" << "\n";
-	for (int j = 0; j < 216; j++){
+	for (int j = 0; j < N; j++){
 				cout << "Ar ";
                 for (int i = 0; i < 3; i++){
                         cout << coords[j][i] << " ";
@@ -28,15 +35,15 @@ int main(){
 }
 
 int genCoords(){
-    for (int i = 0; i <= 215; i++){
-        coords[i][0] = (float(i%18)*1.75) + (float(i/72)*1.75); //Fill all x coords
+    for (int i = 0; i < N; i++){
+        coords[i][0] = (float(i%xmax)*rh) + (float(i/Nmax)*rh); //Fill all x coords
     }
-    for (int i = 0; i <= 215; i++){
-    	if (i%2 == 0){coords[i][1] = (float(2*((i%72)/18))*3.5) + (float(i/72)*1.75);}
-    	else {coords[i][1] = (float(2*((i%72)/18)+1)*3.5) + (float(i/72)*1.75);}
+    for (int i = 0; i < N; i++){
+    	if (i%2 == 0){coords[i][1] = (float(2*((i%Nmax)/xmax))*r) + (float(i/Nmax)*rh);}
+    	else {coords[i][1] = (float(2*((i%Nmax)/xmax)+1)*r) + (float(i/Nmax)*rh);}
     }
-    for (int i = 0; i <= 215; i++){
-		coords[i][2] = float(i/72)*3.5;
+    for (int i = 0; i < N; i++){
+		coords[i][2] = float(i/Nmax)*r;
     }
         return 0;
 }
