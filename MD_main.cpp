@@ -3,14 +3,11 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include <ctime>
-#include <vector>
 
 using namespace std;
-using std::vector;
 
 //Global Variables
 float coords[216][3];
-//float **Coords = coords[0][0];
 
 //Function Prototypes
 int genCoords();
