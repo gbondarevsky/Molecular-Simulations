@@ -36,7 +36,7 @@ int main(){
 	//printCoords();
 	initveloc();
 	printVel();
-	//velScale();
+	velScale();
 	printVel();
     return 0;
 }
