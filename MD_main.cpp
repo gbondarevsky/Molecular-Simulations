@@ -69,7 +69,7 @@ void initveloc(){
 	float r1, r2, r3, r4, r5, r6;//Variable Declarations
 	float totalx, totaly, totalz;
 
-	srand(time(NULL));
+	srand((unsigned)time(0));
 
 	for(int j=0; j<215; j++){
 	r1 = number();//Creates random numbers for the normal distributions
@@ -78,33 +78,33 @@ void initveloc(){
 	r4 = number();
 	r5 = number(); 
 	r6 = number();
-	velocx[j] = 14.378*sqrt(T)*sqrt(-2*log(r1))*cos(2*M_PI*r2); // Assigns a random velocity in a normal distribution
-	velocy[j] = 14.378*sqrt(T)*sqrt(-2*log(r3))*cos(2*M_PI*r4);//14.378 is the sqrt(k/m) 
-	velocz[j] = 14.378*sqrt(T)*sqrt(-2*log(r5))*cos(2*M_PI*r6);
+	velocx[j] = 14.378*sqrt(T)*sqrt(-2.0*log(r1))*cos(2.0*M_PI*r2); // Assigns a random velocity in a normal distribution
+	velocy[j] = 14.378*sqrt(T)*sqrt(-2.0*log(r3))*cos(2.0*M_PI*r4); //14.378 is the sqrt(k/m) 
+	velocz[j] = 14.378*sqrt(T)*sqrt(-2.0*log(r5))*cos(2.0*M_PI*r6);
 	}
 
-	for( int k=0; k<215; k++){
+	for( int k=0; k<N; k++){
 		totalx = totalx + velocx[k];// sums all of the velocities
 		totaly = totaly + velocy[k];
 		totalz = totalz + velocz[k];
 	}
 	if (totalx != 0){
-		float correctionx = totalx/216; // checks and corrections velocity to make total momentum 0
-		for (int l=0; l<215; l++){
+		float correctionx = totalx/N; // checks and corrections velocity to make total momentum 0
+		for (int l=0; l<N; l++){
 			velocx[l] = velocx[l] - correctionx;
 		}
 	}
 
 	if (totaly != 0){
-		float correctiony = totaly/216;
-		for(int m=0; m<215; m++){
+		float correctiony = totaly/N;
+		for(int m=0; m<N; m++){
 			velocy[m] = velocy[m] - correctiony;
 		}
 	}
 
 	if (totalz != 0){
-		float correctionz = totalz/216;
-		for(int n=0; n<215; n++){
+		float correctionz = totalz/N;
+		for(int n=0; n<N; n++){
 			velocz[n] = velocz[n] - correctionz;
 		}
 	}
@@ -112,7 +112,8 @@ void initveloc(){
 }
 
 float number(){
-	double r = ((double) rand() / (RAND_MAX));// Returns a random number between 0 and 1
+	rand(); rand(); rand(); // Magic
+	float r = (float(rand()) / float(RAND_MAX));// Returns a random number between 0 and 1
 	return r;
 }
 
