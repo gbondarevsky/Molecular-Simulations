@@ -29,11 +29,14 @@ float number();
 float kintemp();
 void printCoords();
 void printVel();
+void velScale();
 
 int main(){
 	genCoords();
-	printCoords();
+	//printCoords();
 	initveloc();
+	printVel();
+	//velScale();
 	printVel();
     return 0;
 }
@@ -138,4 +141,15 @@ cout << "Printing the components of velocity\n";
 
 	cout << "\n";
 	cout <<"The kinetic temperature is " << t << "\n";
+}
+
+void velScale(){
+	float Tt = kintemp();
+	if (((T - Tt) > 2) || ((Tt - T) > 2)){
+		for(int i = 0; i<N; i++){
+		velocx[i] = (T/Tt)*velocx[i];
+		velocy[i] = (T/Tt)*velocy[i];
+		velocz[i] = (T/Tt)*velocz[i];
+		}
+	}
 }
