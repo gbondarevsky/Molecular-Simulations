@@ -8,6 +8,8 @@ using namespace std;
 
 void initveloc();// function prototypes
 float number();
+float kintemp();
+
 
 float velocx[216];// Global Variables
 float velocy[216];
@@ -17,14 +19,17 @@ float T = 20;
 
 int main() {
 	initveloc();
-
+	cout << "Printing the components of velocity\n";
 	for( int i=0; i<215; i++){
-		cout << velocx[i] << "\t" << velocy[i] << "\t" << velocz[i] << "\n";
+		cout << velocx[i] << " | " << velocy[i] << " | " << velocz[i] << "\n";
 	}
+	float t = kintemp();
 	
 
-}
+	cout << "\n";
+	cout <<"The kinetic temperature is " << t << "\n";
 
+}
 void initveloc(){
 	
 	float r1, r2, r3, r4, r5, r6;//Variable Declarations
@@ -74,4 +79,15 @@ void initveloc(){
 float number(){
 	double r = ((double) rand() / (RAND_MAX));// Returns a random number between 0 and 1
 	return r;
+}
+float kintemp(){
+	float c = 7.48e-6;// Prefactor
+	float totvelocsq;
+
+	for(int i=0; i<215; i++){
+		totvelocsq = totvelocsq + velocx[i]*velocx[i] + velocy[i]*velocy[i] + velocz[i]*velocz[i];
+		}
+	float kintemp = c*totvelocsq;
+	return kintemp; 
+
 }
