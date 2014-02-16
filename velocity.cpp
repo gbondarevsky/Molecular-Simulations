@@ -40,7 +40,7 @@ void initveloc(){
 	r5 = number(); 
 	r6 = number();
 	velocx[j] = 14.378*sqrt(T)*sqrt(-2*log(r1))*cos(2*M_PI*r2); // Assigns a random velocity in a normal distribution
-	velocy[j] = 14.378*sqrt(T)*sqrt(-2*log(r3))*cos(2*M_PI*r4);
+	velocy[j] = 14.378*sqrt(T)*sqrt(-2*log(r3))*cos(2*M_PI*r4);//14.378 is the sqrt(k/m) 
 	velocz[j] = 14.378*sqrt(T)*sqrt(-2*log(r5))*cos(2*M_PI*r6);
 	}
 
