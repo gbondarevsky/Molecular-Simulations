@@ -172,7 +172,7 @@ void simulation(){
 
 	for(int t=1 ; t < 5; t++){
 	
-		for( int I=1; N; I++){
+		for( int I=0; I<N; I++){
 
 			rxnewI = 2.0 * rx[I] - rxold[I] + dtsq * ax[I];
 			rynewI = 2.0 * ry[I] - ryold[I] + dtsq * ay[I];
