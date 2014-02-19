@@ -50,14 +50,8 @@ int main(){
 	printCoords();
 	initveloc();
 	printVel();
-	void simulation();
+	simulation();
 
-	for (int j = 0; j < N; j++){
-        	cout << ry[j] << " ";
-        }
-	cout << "Total v^2";
-	cout <<  "\n";
-        cout << sumvsq ;
     return 0;
 }
 
@@ -172,24 +166,25 @@ void simulation(){
 
 	for(int t=1 ; t < 5; t++){
 	
-		for( int I=0; I<N; I++){
+		for( int i=0; i<N; i++){
 
-			rxnewI = 2.0 * rx[I] - rxold[I] + dtsq * ax[I];
-			rynewI = 2.0 * ry[I] - ryold[I] + dtsq * ay[I];
-			rznewI = 2.0 * rz[I] - rzold[I] + dtsq * az[I];
-			vxI = ( rxnewI - rxold[I] ) / dt2;
-			vyI = ( rynewI - ryold[I] ) / dt2;
-			vzI = ( rznewI - rzold[I] ) / dt2;
+			rxnewI = 2.0 * rx[i] - rxold[i] + dtsq * ax[i];
+			rynewI = 2.0 * ry[i] - ryold[i] + dtsq * ay[i];
+			rznewI = 2.0 * rz[i] - rzold[i] + dtsq * az[i];
+			vxI = ( rxnewI - rxold[i] ) / dt2;
+			vyI = ( rynewI - ryold[i] ) / dt2;
+			vzI = ( rznewI - rzold[i] ) / dt2;
 			sumvsq = sumvsq + vxI * vxI + vyI * vyI + vzI * vzI;	
+//        		cout << sumvsq << " ";
 			totalx = totalx + vxI;
 			totaly = totaly + vyI;
 			totalz = totalz + vzI;
-			rxold[I] = rx[I];
-			ryold[I] = ry[I];
-			rzold[I] = rz[I];
-			rx[I] = rxnewI;
-			ry[I] = rynewI;
-			rz[I] = rznewI;
+			rxold[i] = rx[i];
+			ryold[i] = ry[i];
+			rzold[i] = rz[i];
+			rx[i] = rxnewI;
+			ry[i] = rynewI;
+			rz[i] = rznewI;
 
 		}
 	}
