@@ -13,7 +13,7 @@ const float rh = r/2.0;
 const int N = 216; //Number of particles
 const int Nmax = N/3; //Maximum number of particles per plane
 const int xmax = 18; //Number of particles with unique x values in a single plane [Ask Gary].
-const float dt = 0.00001; //Time step
+const float dt = 1; //Time step
 const float dt2 = 2*dt; //2*Time step
 const float dtsq = dt*dt; //Time step squared
 
@@ -95,9 +95,9 @@ void initveloc(){
 	r4 = number();
 	r5 = number(); 
 	r6 = number();
-	velocx[j] = 14.378*sqrt(T)*sqrt(-2.0*log(r1))*cos(2.0*M_PI*r2); // Assigns a random velocity in a normal distribution
-	velocy[j] = 14.378*sqrt(T)*sqrt(-2.0*log(r3))*cos(2.0*M_PI*r4); //14.378 is the sqrt(k/m) 
-	velocz[j] = 14.378*sqrt(T)*sqrt(-2.0*log(r5))*cos(2.0*M_PI*r6);
+	velocx[j] = 14.378*100000*sqrt(T)*sqrt(-2.0*log(r1))*cos(2.0*M_PI*r2); // Assigns a random velocity in a normal distribution
+	velocy[j] = 14.378*100000*sqrt(T)*sqrt(-2.0*log(r3))*cos(2.0*M_PI*r4); //14.378 is the sqrt(k/m) 
+	velocz[j] = 14.378*100000*sqrt(T)*sqrt(-2.0*log(r5))*cos(2.0*M_PI*r6);
 	}
 
 	for( int k=0; k<N; k++){
@@ -205,7 +205,7 @@ float kintemp(){
 	for(int i=0; i<215; i++){
 		totvelocsq = totvelocsq + velocx[i]*velocx[i] + velocy[i]*velocy[i] + velocz[i]*velocz[i];
 		}
-	float kintemp = c*totvelocsq;
+	float kintemp = c*totvelocsq/10000000000;
 	return kintemp; 
 }
 
