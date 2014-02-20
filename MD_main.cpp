@@ -51,6 +51,9 @@ float kintemp();
 void printCoords();
 void printVel();
 void simulation();
+void LJ_pot();
+void distMat();
+void cartDist();
 
 int main(){
 	genCoords();
@@ -178,44 +181,9 @@ void simulation(){
 
 	//loop over time
 	for(int t=1 ; t < 5; t++){
-
-		//Distance Matrix
-
-		for(int i=0; i<N; i++){
-
-			for(int j=0; j<i; j++){
-
-				rij[i][j] = sqrt(pow(rx[i]-rx[j],2) + pow(ry[i]-ry[j],2) + pow(rz[i]-rz[j],2)  );
-
-			}
-
-		}
-
-		//LJ Potential - Uses parameters for Argon
-
-		for(int i=0; i<N; i++){
-
-			for(int j=0; j<i; j++){
-				
-				LJ[i][j] = 4*eps*(pow(sig/rij[i][j],12) - pow(sig/rij[i][j],6));
-		
-			}
-
-		}
-
-		//Cartesian Distances
-
-		for(int i=0; i<N; i++){
-
-			for(int j=0; j<i; j++){
-
-				xij[i][j] = rx[i]-rx[j];
-				yij[i][j] = ry[i]-ry[j];
-				zij[i][j] = rz[i]-rz[j];
-
-			}
-
-		}
+		distMat();
+		LJ_pot();
+		cartDist();
 
 		//Minimum Image
 
@@ -272,8 +240,36 @@ cout << "Printing the components of velocity\n";
 		cout << velocx[i] << " | " << velocy[i] << " | " << velocz[i] << "\n";
 	}
 	float t = kintemp();
-	
 
 	cout << "\n";
 	cout <<"The kinetic temperature is " << t << "\n";
+}
+
+void distMat(){
+	//Distance Matrix
+	for(int i=0; i<N; i++){
+		for(int j=0; j<i; j++){
+			rij[i][j] = sqrt(pow(rx[i]-rx[j],2) + pow(ry[i]-ry[j],2) + pow(rz[i]-rz[j],2)  );
+			}
+		}
+	}
+
+void LJ_pot(){
+	//LJ Potential - Uses parameters for Argon
+	for(int i=0; i<N; i++){
+		for(int j=0; j<i; j++){
+			LJ[i][j] = 4*eps*(pow(sig/rij[i][j],12) - pow(sig/rij[i][j],6));
+		}
+	}
+}
+
+void cartDist(){
+	//Cartesian Distances
+	for(int i=0; i<N; i++){
+		for(int j=0; j<i; j++){
+				xij[i][j] = rx[i]-rx[j];
+				yij[i][j] = ry[i]-ry[j];
+				zij[i][j] = rz[i]-rz[j];
+		}
+	}
 }
