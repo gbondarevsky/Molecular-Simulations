@@ -43,12 +43,16 @@ float number();
 float kintemp();
 void printCoords();
 void printVel();
+void velScale();
+float totvelocsq();
 void simulation();
 
 int main(){
 	genCoords();
 	printCoords();
 	initveloc();
+	printVel();
+	velScale();
 	printVel();
 	simulation();
 
@@ -200,13 +204,16 @@ float number(){
 
 float kintemp(){
 	float c = 7.48e-6;// Prefactor
-	float totvelocsq;
+	float kintemp = c*totvelocsq()/10000000000;
+	return kintemp; 
+}
 
+float totvelocsq(){
+	float totvelocsq;
 	for(int i=0; i<215; i++){
 		totvelocsq = totvelocsq + velocx[i]*velocx[i] + velocy[i]*velocy[i] + velocz[i]*velocz[i];
 		}
-	float kintemp = c*totvelocsq/10000000000;
-	return kintemp; 
+	return totvelocsq;
 }
 
 void printVel(){
@@ -219,4 +226,18 @@ cout << "Printing the components of velocity\n";
 
 	cout << "\n";
 	cout <<"The kinetic temperature is " << t << "\n";
+}
+
+void velScale(){
+	float Tt = kintemp();
+	float deltaT = abs(T - Tt);
+	for ( ; deltaT > 2; ){
+		for( int i=0; i<N; i++){
+			velocx[i] = ((T+100)/(Tt+100))*velocx[i]; //Makes the scaling go slower 
+			velocy[i] = ((T+100)/(Tt+100))*velocy[i];
+			velocz[i] = ((T+100)/(Tt+100))*velocz[i];
+			}
+		Tt = kintemp();
+		deltaT = abs( T -Tt);
+	}
 }
