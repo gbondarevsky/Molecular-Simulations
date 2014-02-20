@@ -36,11 +36,11 @@ float rxold[N];
 float ryold[N];
 float rzold[N];
 float sumvsq; //v^2
-float rij[N][N];
+float rij[N][N];//pair distances in terms of r
 float xij[N][N];
 float yij[N][N];
 float zij[N][N];
-float lj[N][N];
+float LJ[N][N];//LJ potential
 
 
 //Function Prototypes
@@ -137,6 +137,8 @@ void initveloc(){
 
 void simulation(){
 
+	//This converts coords file to cartesian positions
+
         for (int i = 0; i < 3; i++){
 		if(i == 0){
 			for (int j = 0; j < N; j++){
@@ -155,12 +157,14 @@ void simulation(){
 		}
         }
 	
+	//This predicts old positions
 	for (int j = 0; j < N; j++){
         	rxold[j] = rx[j] - velocx[j] * dt  ;
         	ryold[j] = ry[j] - velocy[j] * dt  ;
         	rzold[j] = rz[j] - velocz[j] * dt  ;
        	}
 
+	//Local variables used in Verlet algorithm
 	float totalx;
 	float totaly;
 	float totalz;
@@ -171,6 +175,8 @@ void simulation(){
 	float vyI;
 	float vzI;
 
+
+	//loop over time
 	for(int t=1 ; t < 5; t++){
 
 		//Distance Matrix
@@ -179,7 +185,7 @@ void simulation(){
 
 			for(int j=0; j<i; j++){
 
-				rij[i][j] = sqrt((rx[i]-rx[j])(rx[i]-rx[j]) + (ry[i]-ry[j])(ry[i]-ry[j]) + (rz[i]-rz[j])(rz[i]-rz[j])  );
+				rij[i][j] = sqrt(pow(rx[i]-rx[j],2) + pow(ry[i]-ry[j],2) + pow(rz[i]-rz[j],2)  );
 
 			}
 
@@ -203,9 +209,9 @@ void simulation(){
 
 			for(int j=0; j<i; j++){
 
-				xij = rx[i]-rx[j];
-				yij = ry[i]-ry[j];
-				zij = rz[i]-rz[j];
+				xij[i][j] = rx[i]-rx[j];
+				yij[i][j] = ry[i]-ry[j];
+				zij[i][j] = rz[i]-rz[j];
 
 			}
 
@@ -217,6 +223,7 @@ void simulation(){
 
 		//Accelerations
 	
+		//Verlet Algorithm
 		for( int i=0; i<N; i++){
 
 			rxnewI = 2.0 * rx[i] - rxold[i] + dtsq * ax[i];
