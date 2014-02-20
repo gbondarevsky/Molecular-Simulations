@@ -8,11 +8,15 @@
 using namespace std;
 
 //Constants
-const float r = 3.5; //Distance from one particle to another
+const float r = 15; //Distance from one particle to another.  We have to go redo the y and z directions at some point
 const float rh = r/2.0;
 const int N = 216; //Number of particles
 const int Nmax = N/3; //Maximum number of particles per plane
 const int xmax = 18; //Number of particles with unique x values in a single plane [Ask Gary].
+const float dt = 1; //Time step
+const float dt2 = 2*dt; //2*Time step
+const float dtsq = dt*dt; //Time step squared
+
 
 //Global Variables
 float coords[N][3];
@@ -20,6 +24,16 @@ float velocx[N];
 float velocy[N];
 float velocz[N];
 float T = 20;
+float rx[N];
+float ry[N];
+float rz[N];
+float ax[N];
+float ay[N];
+float az[N];
+float rxold[N];
+float ryold[N];
+float rzold[N];
+float sumvsq; //v^2
 
 
 //Function Prototypes
@@ -29,12 +43,15 @@ float number();
 float kintemp();
 void printCoords();
 void printVel();
+void simulation();
 
 int main(){
 	genCoords();
 	printCoords();
 	initveloc();
 	printVel();
+	simulation();
+
     return 0;
 }
 
@@ -78,9 +95,9 @@ void initveloc(){
 	r4 = number();
 	r5 = number(); 
 	r6 = number();
-	velocx[j] = 14.378*sqrt(T)*sqrt(-2.0*log(r1))*cos(2.0*M_PI*r2); // Assigns a random velocity in a normal distribution
-	velocy[j] = 14.378*sqrt(T)*sqrt(-2.0*log(r3))*cos(2.0*M_PI*r4); //14.378 is the sqrt(k/m) 
-	velocz[j] = 14.378*sqrt(T)*sqrt(-2.0*log(r5))*cos(2.0*M_PI*r6);
+	velocx[j] = 14.378*100000*sqrt(T)*sqrt(-2.0*log(r1))*cos(2.0*M_PI*r2); // Assigns a random velocity in a normal distribution
+	velocy[j] = 14.378*100000*sqrt(T)*sqrt(-2.0*log(r3))*cos(2.0*M_PI*r4); //14.378 is the sqrt(k/m) 
+	velocz[j] = 14.378*100000*sqrt(T)*sqrt(-2.0*log(r5))*cos(2.0*M_PI*r6);
 	}
 
 	for( int k=0; k<N; k++){
@@ -111,6 +128,70 @@ void initveloc(){
 	
 }
 
+void simulation(){
+
+        for (int i = 0; i < 3; i++){
+		if(i == 0){
+			for (int j = 0; j < N; j++){
+                       		rx[j]=coords[j][0] ;
+               		}	
+		}
+		if(i == 1){
+			for (int j = 0; j < N; j++){
+                        	ry[j]=coords[j][1] ;
+                	}
+		}
+		if(i == 2){
+			for (int j = 0; j < N; j++){
+                        	rz[j]=coords[j][2] ;
+                	}
+		}
+        }
+	
+	for (int j = 0; j < N; j++){
+        	rxold[j] = rx[j] - velocx[j] * dt  ;
+        	ryold[j] = ry[j] - velocy[j] * dt  ;
+        	rzold[j] = rz[j] - velocz[j] * dt  ;
+       	}
+
+	float totalx;
+	float totaly;
+	float totalz;
+	float rxnewI;
+	float rynewI;
+	float rznewI;
+	float vxI;
+	float vyI;
+	float vzI;
+
+	for(int t=1 ; t < 5; t++){
+	
+		for( int i=0; i<N; i++){
+
+			rxnewI = 2.0 * rx[i] - rxold[i] + dtsq * ax[i];
+			rynewI = 2.0 * ry[i] - ryold[i] + dtsq * ay[i];
+			rznewI = 2.0 * rz[i] - rzold[i] + dtsq * az[i];
+			vxI = ( rxnewI - rxold[i] ) / dt2;
+			vyI = ( rynewI - ryold[i] ) / dt2;
+			vzI = ( rznewI - rzold[i] ) / dt2;
+			sumvsq = sumvsq + vxI * vxI + vyI * vyI + vzI * vzI;	
+//        		cout << sumvsq << " ";
+			totalx = totalx + vxI;
+			totaly = totaly + vyI;
+			totalz = totalz + vzI;
+			rxold[i] = rx[i];
+			ryold[i] = ry[i];
+			rzold[i] = rz[i];
+			rx[i] = rxnewI;
+			ry[i] = rynewI;
+			rz[i] = rznewI;
+
+		}
+	}
+	
+
+}
+
 float number(){
 	rand(); rand(); rand(); // Magic
 	float r = (float(rand()) / float(RAND_MAX));// Returns a random number between 0 and 1
@@ -124,7 +205,7 @@ float kintemp(){
 	for(int i=0; i<215; i++){
 		totvelocsq = totvelocsq + velocx[i]*velocx[i] + velocy[i]*velocy[i] + velocz[i]*velocz[i];
 		}
-	float kintemp = c*totvelocsq;
+	float kintemp = c*totvelocsq/10000000000;
 	return kintemp; 
 }
 
