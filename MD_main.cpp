@@ -16,6 +16,8 @@ const int xmax = 18; //Number of particles with unique x values in a single plan
 const float dt = 1; //Time step
 const float dt2 = 2*dt; //2*Time step
 const float dtsq = dt*dt; //Time step squared
+const float eps = 119.8*0.001380649 // epsilon
+const float sig = 3.405 // sigma
 
 
 //Global Variables
@@ -34,6 +36,11 @@ float rxold[N];
 float ryold[N];
 float rzold[N];
 float sumvsq; //v^2
+float rij[N][N];
+float xij[N][N];
+float yij[N][N];
+float zij[N][N];
+float lj[N][N];
 
 
 //Function Prototypes
@@ -165,6 +172,50 @@ void simulation(){
 	float vzI;
 
 	for(int t=1 ; t < 5; t++){
+
+		\\Distance Matrix
+
+		for(int i=0; i<N; i++){
+
+			for(int j=0; j<i; j++){
+
+				rij[i][j] = sqrt((rx[i]-rx[j])(rx[i]-rx[j]) + (ry[i]-ry[j])(ry[i]-ry[j]) + (rz[i]-rz[j])(rz[i]-rz[j])  );
+
+			}
+
+		}
+
+		\\LJ Potential - Uses parameters for Argon
+
+		for(int i=0; i<N; i++){
+
+			for(int j=0; j<i; j++){
+				
+				LJ[i][j] = 4*eps*(pow(sig/rij[i][j],12) - pow(sig/rij[i][j],6));
+		
+			}
+
+		}
+
+		\\Cartesian Distances
+
+		for(int i=0; i<N; i++){
+
+			for(int j=0; j<i; j++){
+
+				xij = rx[i]-rx[j];
+				yij = ry[i]-ry[j];
+				zij = rz[i]-rz[j];
+
+			}
+
+		}
+
+		\\Minimum Image
+
+		\\Forces
+
+		\\Accelerations
 	
 		for( int i=0; i<N; i++){
 
@@ -175,7 +226,6 @@ void simulation(){
 			vyI = ( rynewI - ryold[i] ) / dt2;
 			vzI = ( rznewI - rzold[i] ) / dt2;
 			sumvsq = sumvsq + vxI * vxI + vyI * vyI + vzI * vzI;	
-//        		cout << sumvsq << " ";
 			totalx = totalx + vxI;
 			totaly = totaly + vyI;
 			totalz = totalz + vzI;
