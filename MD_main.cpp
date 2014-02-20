@@ -16,8 +16,8 @@ const int xmax = 18; //Number of particles with unique x values in a single plan
 const float dt = 1; //Time step
 const float dt2 = 2*dt; //2*Time step
 const float dtsq = dt*dt; //Time step squared
-const float eps = 119.8*0.001380649 // epsilon
-const float sig = 3.405 // sigma
+const float eps = 119.8*0.001380649; // epsilon
+const float sig = 3.405; // sigma
 
 
 //Global Variables
@@ -173,7 +173,7 @@ void simulation(){
 
 	for(int t=1 ; t < 5; t++){
 
-		\\Distance Matrix
+		//Distance Matrix
 
 		for(int i=0; i<N; i++){
 
@@ -185,7 +185,7 @@ void simulation(){
 
 		}
 
-		\\LJ Potential - Uses parameters for Argon
+		//LJ Potential - Uses parameters for Argon
 
 		for(int i=0; i<N; i++){
 
@@ -197,7 +197,7 @@ void simulation(){
 
 		}
 
-		\\Cartesian Distances
+		//Cartesian Distances
 
 		for(int i=0; i<N; i++){
 
@@ -211,11 +211,11 @@ void simulation(){
 
 		}
 
-		\\Minimum Image
+		//Minimum Image
 
-		\\Forces
+		//Forces
 
-		\\Accelerations
+		//Accelerations
 	
 		for( int i=0; i<N; i++){
 
