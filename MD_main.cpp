@@ -56,17 +56,11 @@ float kintemp();
 void printCoords();
 void printVel();
 void simulation();
-<<<<<<< HEAD
 void cartDist();
 float minimage(float,float);
 void distMat();
 void LJpot();
 void Forces();
-=======
-void LJ_pot();
-void distMat();
-void cartDist();
->>>>>>> fc446bc747b8bffd280c9a4244ea7b448c780fd3
 
 int main(){
 	genCoords();
@@ -194,7 +188,6 @@ void simulation(){
 
 	//loop over time
 	for(int t=1 ; t < 5; t++){
-<<<<<<< HEAD
 
 		//Distance Matrix
 
@@ -224,12 +217,6 @@ void simulation(){
 			}
 
 		}
-=======
-		distMat();
-		LJ_pot();
-		cartDist();
->>>>>>> fc446bc747b8bffd280c9a4244ea7b448c780fd3
-
 	
 		//Verlet Algorithm
 		for( int i=0; i<N; i++){
@@ -285,7 +272,6 @@ cout << "Printing the components of velocity\n";
 	cout <<"The kinetic temperature is " << t << "\n";
 }
 
-<<<<<<< HEAD
 void cartDist(){
 //Cartesian Distances
 for(int i=0; i<N; i++){
@@ -340,33 +326,4 @@ void Forces(){
 				Fz[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),7))*dzij[i][j]/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j]));
        }
 }	
-=======
-void distMat(){
-	//Distance Matrix
-	for(int i=0; i<N; i++){
-		for(int j=0; j<i; j++){
-			rij[i][j] = sqrt(pow(rx[i]-rx[j],2) + pow(ry[i]-ry[j],2) + pow(rz[i]-rz[j],2)  );
-			}
-		}
-	}
-
-void LJ_pot(){
-	//LJ Potential - Uses parameters for Argon
-	for(int i=0; i<N; i++){
-		for(int j=0; j<i; j++){
-			LJ[i][j] = 4*eps*(pow(sig/rij[i][j],12) - pow(sig/rij[i][j],6));
-		}
-	}
-}
-
-void cartDist(){
-	//Cartesian Distances
-	for(int i=0; i<N; i++){
-		for(int j=0; j<i; j++){
-				xij[i][j] = rx[i]-rx[j];
-				yij[i][j] = ry[i]-ry[j];
-				zij[i][j] = rz[i]-rz[j];
-		}
-	}
->>>>>>> fc446bc747b8bffd280c9a4244ea7b448c780fd3
 }
