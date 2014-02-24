@@ -8,59 +8,60 @@
 using namespace std;
 
 //Constants
-const float r = 15; //Distance from one particle to another.  We have to go redo the y and z directions at some point
-const float rh = r/2.0;
+const double r = 15; //Distance from one particle to another.  We have to go redo the y and z directions at some point
+const double rh = r/2.0;
 const int N = 216; //Number of particles
 const int Nmax = N/3; //Maximum number of particles per plane
 const int xmax = 18; //Number of particles with unique x values in a single plane [Ask Gary].
-const float dt = 1; //Time step
-const float dt2 = 2*dt; //2*Time step
-const float dtsq = dt*dt; //Time step squared
-const float eps = 119.8*0.001380649; // epsilon
-const float sig = 3.405; // sigma
-const float mAr = pow(6.6, -26); //Mass of an Ar atom
-const float boxl = 300; 
+const double dt = 1; //Time step in femptoseconds
+const double dt2 = 2*dt; //2*Time step
+const double dtsq = dt*dt; //Time step squared
+const double eps = 119.8*0.001380649; // epsilon
+const double sig = 3.405; // sigma
+const double mAr = pow(6.6, -26); //Mass of an Ar atom
+const double boxl = 300; 
 
 
 //Global Variables
-float coords[N][3];
-float velocx[N];
-float velocy[N];
-float velocz[N];
-float T = 20;
-float rx[N];
-float ry[N];
-float rz[N];
-float ax[N];
-float ay[N];
-float az[N];
-float rxold[N];
-float ryold[N];
-float rzold[N];
-float sumvsq; //v^2
-float rij[N][N];//pair distances in terms of r
-float dxij[N][N];
-float dyij[N][N];
-float dzij[N][N];
-float LJ[N][N];//LJ potential
-float Fx[N][N];//Forces
-float Fy[N][N];//Forces
-float Fz[N][N];//Forces
+double coords[N][3];
+double velocx[N];
+double velocy[N];
+double velocz[N];
+double T = 20;
+double rx[N];
+double ry[N];
+double rz[N];
+double ax[N];
+double ay[N];
+double az[N];
+double rxold[N];
+double ryold[N];
+double rzold[N];
+double sumvsq; //v^2
+double rij[N][N];//pair distances in terms of r
+double dxij[N][N];
+double dyij[N][N];
+double dzij[N][N];
+double LJ[N][N];//LJ potential
+double Fx[N][N];//Forces
+double Fy[N][N];//Forces
+double Fz[N][N];//Forces
 
 
 //Function Prototypes
 int genCoords();
 void initveloc();
-float number();
-float kintemp();
+double number();
+double kintemp();
 void printCoords();
 void printVel();
 void simulation();
 void cartDist();
-float minimage(float,float);
+double minimage(double x1,double x2);
 void distMat();
 void LJpot();
 void Forces();
+void Acceleration();
 
 int main(){
 	genCoords();
@@ -74,14 +75,14 @@ int main(){
 
 int genCoords(){
     for (int i = 0; i < N; i++){
-        coords[i][0] = (float(i%xmax)*rh) + (float(i/Nmax)*rh); //Fill all x coords
+        coords[i][0] = (double(i%xmax)*rh) + (double(i/Nmax)*rh); //Fill all x coords
     }
     for (int i = 0; i < N; i++){
-    	if (i%2 == 0){coords[i][1] = (float(2*((i%Nmax)/xmax))*r) + (float(i/Nmax)*rh);}
-    	else {coords[i][1] = (float(2*((i%Nmax)/xmax)+1)*r) + (float(i/Nmax)*rh);}
+    	if (i%2 == 0){coords[i][1] = (double(2*((i%Nmax)/xmax))*r) + (double(i/Nmax)*rh);}
+    	else {coords[i][1] = (double(2*((i%Nmax)/xmax)+1)*r) + (double(i/Nmax)*rh);}
     }
     for (int i = 0; i < N; i++){
-		coords[i][2] = float(i/Nmax)*r;
+		coords[i][2] = double(i/Nmax)*r;
     }
         return 0;
 }
@@ -100,8 +101,8 @@ void printCoords(){
 
 void initveloc(){
 	
-	float r1, r2, r3, r4, r5, r6;//Variable Declarations
-	float totalx, totaly, totalz;
+	double r1, r2, r3, r4, r5, r6;//Variable Declarations
+	double totalx, totaly, totalz;
 
 	srand((unsigned)time(0));
 
@@ -123,21 +124,21 @@ void initveloc(){
 		totalz = totalz + velocz[k];
 	}
 	if (totalx != 0){
-		float correctionx = totalx/N; // checks and corrections velocity to make total momentum 0
+		double correctionx = totalx/N; // checks and corrections velocity to make total momentum 0
 		for (int l=0; l<N; l++){
 			velocx[l] = velocx[l] - correctionx;
 		}
 	}
 
 	if (totaly != 0){
-		float correctiony = totaly/N;
+		double correctiony = totaly/N;
 		for(int m=0; m<N; m++){
 			velocy[m] = velocy[m] - correctiony;
 		}
 	}
 
 	if (totalz != 0){
-		float correctionz = totalz/N;
+		double correctionz = totalz/N;
 		for(int n=0; n<N; n++){
 			velocz[n] = velocz[n] - correctionz;
 		}
@@ -175,52 +176,31 @@ void simulation(){
        	}
 
 	//Local variables used in Verlet algorithm
-	float totalx;
-	float totaly;
-	float totalz;
-	float rxnewI;
-	float rynewI;
-	float rznewI;
-	float vxI;
-	float vyI;
-	float vzI;
+	double totalx;
+	double totaly;
+	double totalz;
+	double rxnewI;
+	double rynewI;
+	double rznewI;
+	double vxI;
+	double vyI;
+	double vzI;
 
 
 	//loop over time
 	for(int t=1 ; t < 5; t++){
-
 		//Distance Matrix
-
-                distMat();
-
-
+            distMat();
 		//LJ Potential - Uses parameters for Argon
-
-                LJpot();
-
-                //Get Distance in Cartesians
-                cartDist();
-
+            LJpot();
+         //Get Distance in Cartesians
+            cartDist();
 		//Forces
-
-	        Forces();	
-
+	        Forces();
 		//Accelerations
-		for(int i=0; i<N; i++){
-
-			for(int j=0; j<i; j++){
-
-				ax[i] = ax[i] + Fx[i][j]/mAr;
-				ay[i] = ay[i] + Fy[i][j]/mAr;
-				az[i] = az[i] + Fz[i][j]/mAr;
-
-			}
-
-		}
-	
+			Acceleration();
 		//Verlet Algorithm
 		for( int i=0; i<N; i++){
-
 			rxnewI = 2.0 * rx[i] - rxold[i] + dtsq * ax[i];
 			rynewI = 2.0 * ry[i] - ryold[i] + dtsq * ay[i];
 			rznewI = 2.0 * rz[i] - rzold[i] + dtsq * az[i];
@@ -237,27 +217,24 @@ void simulation(){
 			rx[i] = rxnewI;
 			ry[i] = rynewI;
 			rz[i] = rznewI;
-
 		}
 	}
-	
-
 }
 
-float number(){
+double number(){
 	rand(); rand(); rand(); // Magic
-	float r = (float(rand()) / float(RAND_MAX));// Returns a random number between 0 and 1
+	double r = (double(rand()) / double(RAND_MAX));// Returns a random number between 0 and 1
 	return r;
 }
 
-float kintemp(){
-	float c = 7.48e-6;// Prefactor
-	float totvelocsq;
+double kintemp(){
+	double c = 7.48e-6;// Prefactor
+	double totvelocsq;
 
 	for(int i=0; i<215; i++){
 		totvelocsq = totvelocsq + velocx[i]*velocx[i] + velocy[i]*velocy[i] + velocz[i]*velocz[i];
 		}
-	float kintemp = c*totvelocsq*10000000000;
+	double kintemp = c*totvelocsq*10000000000;
 	return kintemp; 
 }
 
@@ -266,7 +243,7 @@ cout << "Printing the components of velocity\n";
 	for( int i=0; i<215; i++){
 		cout << velocx[i] << " | " << velocy[i] << " | " << velocz[i] << "\n";
 	}
-	float t = kintemp();
+	double t = kintemp();
 
 	cout << "\n";
 	cout <<"The kinetic temperature is " << t << "\n";
@@ -274,56 +251,70 @@ cout << "Printing the components of velocity\n";
 
 void cartDist(){
 //Cartesian Distances
-for(int i=0; i<N; i++){
-   for(int j=0; j<i; j++){
-      dxij[i][j] = minimage( rx[i], rx[j]);
-      dyij[i][j] = minimage( ry[i], ry[j]);
-      dzij[i][j] = minimage( rz[i], rz[j]);
-   }
-}
+	for(int i=0; i<N; i++){
+		for(int j=0; j<i; j++){
+      		dxij[i][j] = minimage( rx[i], rx[j]);
+      		dyij[i][j] = minimage( ry[i], ry[j]);
+     		dzij[i][j] = minimage( rz[i], rz[j]);
+   		}
+	}
 }                
 
 //Min Image
-float minimage(float x1, float x2){
-    float dist = abs( x1 - x2);
+double minimage(double x1, double x2){
+    double dist = abs( x1 - x2);
     dist = abs(dist - floor( dist/boxl + 0.5)*boxl);
     return dist;
 }
 
 //Distance Matrix
 void distMat(){
-for(int i=0; i<N; i++){
-
-   for(int j=0; j<i; j++){
-
-	rij[i][j] = sqrt(pow(rx[i]-rx[j],2) + pow(ry[i]-ry[j],2) + pow(rz[i]-rz[j],2)  );
-
-   }
-}
+	for(int i=0; i<N; i++){
+		for(int j=0; j<i; j++){
+			rij[i][j] = sqrt(pow(rx[i]-rx[j],2) + pow(ry[i]-ry[j],2) + pow(rz[i]-rz[j],2)  );
+		}
+	}
 }
 
 //LJ Potential
 void LJpot(){
-for(int i=0; i<N; i++){
-
-   for(int j=0; j<i; j++){
-				
-	LJ[i][j] = 4.0*eps*(pow(sig/rij[i][j],12) - pow(sig/rij[i][j],6));
-		
-   }
-}
+	for(int i=0; i<N; i++){
+		for(int j=0; j<i; j++){
+			LJ[i][j] = 4.0*eps*(pow(sig/rij[i][j],12) - pow(sig/rij[i][j],6));
+			cout << LJ[i][j] << " ";	
+		}
+	}
 }
 
 //Forces - The expression is completely obvious and not something that you should probably ask Chad
 void Forces(){	
-     for(int i=0; i<N; i++){
-        for(int j=0; j<i; j++){
-				
-				Fx[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),7))*dxij[i][j]/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j]));
-		
-				Fy[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),7))*dyij[i][j]/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j]));
-
-				Fz[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),7))*dzij[i][j]/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j]));
+    for(int j=0; j<N; j++){
+    	for(int i=0; i<N; i++){
+    		if(i > j){
+			Fx[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),7))*dxij[i][j]/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j]));
+			Fy[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),7))*dyij[i][j]/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j]));
+			Fz[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),7))*dzij[i][j]/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j]));
+			}
+			else if(i==j){
+			Fx[i][j] = 0;
+			Fy[i][j] = 0;
+			Fz[i][j] = 0;
+			}
+			else {
+			Fx[i][j] = -Fx[j][i];
+			Fy[i][j] = -Fy[j][i];
+			Fz[i][j] = -Fz[j][i];
+			}
        }
-}	
+	}		
+}
+
+void Acceleration(){
+	for(int i=0; i<N; i++){
+		for(int j=0; j<i; j++){
+			ax[i] = ax[i] + Fx[i][j]/mAr;
+			ay[i] = ay[i] + Fy[i][j]/mAr;
+			az[i] = az[i] + Fz[i][j]/mAr;
+		}
+	}
 }
