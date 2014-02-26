@@ -294,7 +294,7 @@ void LJpot(){
 		for(int j=0; j<i; j++){
 			LJ[i][j] = 4.0*eps*(pow(sig/rij[i][j],12) - pow(sig/rij[i][j],6));
 			totLJ = totLJ + LJ[i][j];
-			cout << LJ[i][j] << " ";	
+			cout << totLJ << " ";	
 		}
 	}
 }
