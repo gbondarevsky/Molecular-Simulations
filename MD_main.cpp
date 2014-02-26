@@ -152,33 +152,31 @@ void initveloc(){
 }
 
 void simulation(){
-
 	//This converts coords file to cartesian positions
-
         for (int i = 0; i < 3; i++){
-		if(i == 0){
-			for (int j = 0; j < N; j++){
-                       		rx[j]=coords[j][0] ;
-               		}	
-		}
-		if(i == 1){
-			for (int j = 0; j < N; j++){
-                        	ry[j]=coords[j][1] ;
-                	}
-		}
-		if(i == 2){
-			for (int j = 0; j < N; j++){
-                        	rz[j]=coords[j][2] ;
-                	}
-		}
+			if(i == 0){
+				for (int j = 0; j < N; j++){
+                	rx[j]=coords[j][0] ;
+               	}	
+			}
+			if(i == 1){
+				for (int j = 0; j < N; j++){
+            		ry[j]=coords[j][1] ;
+            	}
+			}
+			if(i == 2){
+				for (int j = 0; j < N; j++){
+            		rz[j]=coords[j][2] ;
+            	}
+			}
         }
 	
 	//This predicts old positions
 	for (int j = 0; j < N; j++){
-        	rxold[j] = rx[j] - velocx[j] * dt  ;
-        	ryold[j] = ry[j] - velocy[j] * dt  ;
-        	rzold[j] = rz[j] - velocz[j] * dt  ;
-       	}
+        rxold[j] = rx[j] - velocx[j] * dt  ;
+        ryold[j] = ry[j] - velocy[j] * dt  ;
+        rzold[j] = rz[j] - velocz[j] * dt  ;
+    }
 
 	//Local variables used in Verlet algorithm
 	double totalx;
