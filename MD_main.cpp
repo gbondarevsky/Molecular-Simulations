@@ -49,6 +49,7 @@ double Fy[N][N];//Forces
 double Fz[N][N];//Forces
 bool neighborlist[N][N]; //Neighbor List
 double totLJ; //Total potential energy
+double rmsvdt;
 
 
 //Function Prototypes
@@ -194,7 +195,15 @@ void simulation(){
 	//loop over time
 	for(int t=1 ; t < 5; t++){
 		totLJ = 0;
-		if(t%2 == 0){neighbor();}
+		rmsvdt = sqrt(sumvsq/N)*dt;
+		for(int i=0; i < N; i++){
+			for(int j=0; j<i; j++){
+				if((rmsvdt > rij[i][j]-rcut) && (rij[i][j] > rcut)){
+					neighbor();
+					break;
+				}
+			}
+		}
 		//Distance Matrix
             distMat();
 		//LJ Potential - Uses parameters for Argon
