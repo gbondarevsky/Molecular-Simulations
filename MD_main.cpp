@@ -20,6 +20,7 @@ const double eps = 119.8*0.001380649; // epsilon
 const double sig = 3.405; // sigma
 const double mAr = pow(6.6, -26); //Mass of an Ar atom
 const double boxl = 300; 
+const double rcut = 2.5*sig; //Cutoff distance
 
 
 //Global Variables
@@ -46,6 +47,8 @@ double LJ[N][N];//LJ potential
 double Fx[N][N];//Forces
 double Fy[N][N];//Forces
 double Fz[N][N];//Forces
+bool neighborlist[N][N]; //Neighbor List
+double totLJ; //Total potential energy
 
 
 //Function Prototypes
@@ -62,6 +65,7 @@ void distMat();
 void LJpot();
 void Forces();
 void Acceleration();
+void neighbor();
 
 int main(){
 	genCoords();
@@ -189,6 +193,8 @@ void simulation(){
 
 	//loop over time
 	for(int t=1 ; t < 5; t++){
+		totLJ = 0;
+		if(t%2 == 0){neighbor();}
 		//Distance Matrix
             distMat();
 		//LJ Potential - Uses parameters for Argon
@@ -228,19 +234,14 @@ double number(){
 }
 
 double kintemp(){
-	double c = 7.48e-6;// Prefactor
-	double totvelocsq;
-
-	for(int i=0; i<215; i++){
-		totvelocsq = totvelocsq + velocx[i]*velocx[i] + velocy[i]*velocy[i] + velocz[i]*velocz[i];
-		}
-	double kintemp = c*totvelocsq*10000000000;
+	double c = 7.48e4;// Prefactor
+	double kintemp = c*sumvsq;
 	return kintemp; 
 }
 
 void printVel(){
 cout << "Printing the components of velocity\n";
-	for( int i=0; i<215; i++){
+	for( int i=0; i<N; i++){
 		cout << velocx[i] << " | " << velocy[i] << " | " << velocz[i] << "\n";
 	}
 	double t = kintemp();
@@ -271,7 +272,18 @@ double minimage(double x1, double x2){
 void distMat(){
 	for(int i=0; i<N; i++){
 		for(int j=0; j<i; j++){
-			rij[i][j] = sqrt(pow(rx[i]-rx[j],2) + pow(ry[i]-ry[j],2) + pow(rz[i]-rz[j],2)  );
+			rij[i][j] = sqrt(pow(minimage(rx[i],rx[j]),2) + pow(minimage(ry[i],ry[j]),2) + pow(minimage(rz[i],rz[j]),2));
+		}
+	}
+}
+
+void neighbor(){
+	for(int i=0; i<N; i++){
+		for(int j=0; j<N; j++){ 
+			if(rij[i][j] < rcut)
+				neighborlist[i][j] = true;
+			else
+				neighborlist[i][j] = false;
 		}
 	}
 }
@@ -281,6 +293,7 @@ void LJpot(){
 	for(int i=0; i<N; i++){
 		for(int j=0; j<i; j++){
 			LJ[i][j] = 4.0*eps*(pow(sig/rij[i][j],12) - pow(sig/rij[i][j],6));
+			totLJ = totLJ + LJ[i][j];
 			cout << LJ[i][j] << " ";	
 		}
 	}
@@ -290,20 +303,22 @@ void LJpot(){
 void Forces(){	
     for(int j=0; j<N; j++){
     	for(int i=0; i<N; i++){
-    		if(i > j){
-			Fx[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),7))*dxij[i][j]/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j]));
-			Fy[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),7))*dyij[i][j]/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j]));
-			Fz[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),7))*dzij[i][j]/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j]));
-			}
-			else if(i==j){
-			Fx[i][j] = 0;
-			Fy[i][j] = 0;
-			Fz[i][j] = 0;
-			}
-			else {
-			Fx[i][j] = -Fx[j][i];
-			Fy[i][j] = -Fy[j][i];
-			Fz[i][j] = -Fz[j][i];
+    		if(neighborlist[i][j]==true){
+    			if(i > j){
+				Fx[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),7))*dxij[i][j]/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j]));
+				Fy[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),7))*dyij[i][j]/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j]));
+				Fz[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),7))*dzij[i][j]/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j]));
+				}
+				else if(i==j){
+				Fx[i][j] = 0;
+				Fy[i][j] = 0;
+				Fz[i][j] = 0;
+				}
+				else {
+				Fx[i][j] = -Fx[j][i];
+				Fy[i][j] = -Fy[j][i];
+				Fz[i][j] = -Fz[j][i];
+				}
 			}
        }
 	}		
