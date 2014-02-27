@@ -8,7 +8,7 @@
 using namespace std;
 
 //Constants
-const double kb = 1.38065e-23; //A^2 kg /fs^2 / K
+const double kb = 1.38065e-23; //m^2 kg /s^2 / K  Adam: Trust me leave it like this for now
 const double r = 15; //Distance from one particle to another.  We have to go redo the y and z directions at some point
 const double rh = r/2.0;
 const int N = 216; //Number of particles
