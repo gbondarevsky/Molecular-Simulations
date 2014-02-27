@@ -274,8 +274,8 @@ void simulation(){
 			rz[i] = rznewI;
 			
 		}
-	cout <<"kinetic temperture is " << kintemp() << "\n";
-	printf( "Velocity: %12e %12e %12e \n", vxI, vyI, vzI);
+	cout <<"kinetic temperture is " << kintemp() << "     " ;
+	printf( "Velocity: %12e     %12e     %12e \n", vxI, vyI, vzI);
 	}
 }
 
