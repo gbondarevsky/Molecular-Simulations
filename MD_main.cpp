@@ -151,7 +151,7 @@ void initveloc(){
 
 	srand((unsigned)time(0));
 
-	for(int j=0; j<215; j++){
+	for(int j=0; j<N; j++){
 	r1 = number();//Creates random numbers for the normal distributions
 	r2 = number();
 	r3 = number();
