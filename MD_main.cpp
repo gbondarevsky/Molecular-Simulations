@@ -8,6 +8,7 @@
 using namespace std;
 
 //Constants
+const double kb = 1.38065e-23; //A^2 kg /fs^2 / K
 const double r = 15; //Distance from one particle to another.  We have to go redo the y and z directions at some point
 const double rh = r/2.0;
 const int N = 216; //Number of particles
@@ -16,10 +17,10 @@ const int xmax = 18; //Number of particles with unique x values in a single plan
 const double dt = 1; //Time step in femptoseconds
 const double dt2 = 2*dt; //2*Time step
 const double dtsq = dt*dt; //Time step squared
-const double eps = 119.8*0.001380649; // epsilon
+const double eps = 119.8*kb; //*0.001380649; // epsilon
 const double sig = 3.405; // sigma
-const double mAr = pow(6.6, -26); //Mass of an Ar atom
-const double boxl = 300; 
+const double mAr = 39.9/6.02e23/1000; //Mass of an Ar atom in kg
+const double boxl = 500; 
 const double rcut = 2.5*sig; //Cutoff distance
 
 
@@ -28,7 +29,7 @@ double coords[N][3];
 double velocx[N];
 double velocy[N];
 double velocz[N];
-double T = 20;
+double T = 100;
 double rx[N];
 double ry[N];
 double rz[N];
@@ -51,7 +52,6 @@ bool neighborlist[N][N]; //Neighbor List
 double totLJ; //Total potential energy
 double rmsvdt;
 
-
 //Function Prototypes
 int genCoords();
 void initveloc();
@@ -67,6 +67,7 @@ void LJpot();
 void Forces();
 void Acceleration();
 void neighbor();
+void pressure();
 
 int main(){
 	genCoords();
@@ -74,8 +75,47 @@ int main(){
 	initveloc();
 	printVel();
 	simulation();
+	cout << " Forces\n";
+	for (int i=0; i<10; i++){
+		cout << "\n";
+		for (int j=0; j<10; j++){
+			printf( " %11e ", Fx[i][j]);
+		}
+	}
+	cout << "\n\n rij \n";
+	for (int i=0; i<10; i++){
+		cout << "\n";
+		for (int j=0; j<10; j++){
+			printf( " %11e ", rij[i][j]);
+		}
+	}
+	cout << "\n\n dxij\n";
+	for (int i=0; i<10; i++){
+		cout << "\n";
+		for (int j=0; j<10; j++){
+			printf( " %11e ", dxij[i][j]);
+		}
+	}
+	cout << "\n\n dyij\n";
+	for (int i=0; i<10; i++){
+		cout << "\n";
+		for (int j=0; j<10; j++){
+			printf( " %11e ", dyij[i][j]);
+		}
+	}
+	cout << "\n\n dzij\n";
+	for (int i=0; i<10; i++){
+		cout << "\n";
+		for (int j=0; j<10; j++){
+			printf( " %11e ", dzij[i][j]);
+		}
+	}
+	cout << "\n\n Accelerations\n";
+	for( int i=0; i<10; i++){
+		printf(" %11e %11e %11e \n", ax[i], ay[i], az[i]);
+		}
 
-    return 0;
+	return 0;
 }
 
 int genCoords(){
@@ -189,10 +229,12 @@ void simulation(){
 	double vyI;
 	double vzI;
 
+	neighbor();
 
 	//loop over time
-	for(int t=1 ; t < 5; t++){
+	for(int t=1 ; t < 20; t++){
 		totLJ = 0;
+		sumvsq  = 0;
 		rmsvdt = sqrt(sumvsq/N)*dt;
 		for(int i=0; i < N; i++){
 			for(int j=0; j<i; j++){
@@ -209,7 +251,7 @@ void simulation(){
          //Get Distance in Cartesians
             cartDist();
 		//Forces
-	        Forces();
+	          Forces();
 		//Accelerations
 			Acceleration();
 		//Verlet Algorithm
@@ -230,7 +272,10 @@ void simulation(){
 			rx[i] = rxnewI;
 			ry[i] = rynewI;
 			rz[i] = rznewI;
+			
 		}
+	cout <<"kinetic temperture is " << kintemp() << "\n";
+	printf( "Velocity: %12e %12e %12e \n", vxI, vyI, vzI);
 	}
 }
 
@@ -241,7 +286,7 @@ double number(){
 }
 
 double kintemp(){
-	double c = 7.48e4;// Prefactor
+	double c = mAr/N/kb;// Prefactor
 	double kintemp = c*sumvsq;
 	return kintemp; 
 }
@@ -249,7 +294,8 @@ double kintemp(){
 void printVel(){
 cout << "Printing the components of velocity\n";
 	for( int i=0; i<N; i++){
-		cout << velocx[i] << " | " << velocy[i] << " | " << velocz[i] << "\n";
+	//	cout << velocx[i] << " | " << velocy[i] << " | " << velocz[i] << "\n";
+		printf( "%10f %10f %10f \n", velocx[i], velocy[i], velocz[i]) ;
 	}
 	double t = kintemp();
 
@@ -301,7 +347,7 @@ void LJpot(){
 		for(int j=0; j<i; j++){
 			LJ[i][j] = 4.0*eps*(pow(sig/rij[i][j],12) - pow(sig/rij[i][j],6));
 			totLJ = totLJ + LJ[i][j];
-			cout << totLJ << " ";	
+		//	cout << totLJ << " ";	
 		}
 	}
 }
@@ -315,6 +361,7 @@ void Forces(){
 				Fx[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),7))*dxij[i][j]/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j]));
 				Fy[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),7))*dyij[i][j]/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j]));
 				Fz[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),7))*dzij[i][j]/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j]));
+				
 				}
 				else if(i==j){
 				Fx[i][j] = 0;
@@ -339,4 +386,8 @@ void Acceleration(){
 			az[i] = az[i] + Fz[i][j]/mAr;
 		}
 	}
+}
+void pressure(){
+	double virial;
+	double p = (N*kb*T /boxl /boxl / boxl) - virial;
 }
