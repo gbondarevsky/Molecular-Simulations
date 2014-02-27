@@ -169,21 +169,21 @@ void initveloc(){
 		totaly = totaly + velocy[k];
 		totalz = totalz + velocz[k];
 	}
-	if (totalx != 0){
+	if (totalx > 0.0001){
 		double correctionx = totalx/N; // checks and corrections velocity to make total momentum 0
 		for (int l=0; l<N; l++){
 			velocx[l] = velocx[l] - correctionx;
 		}
 	}
 
-	if (totaly != 0){
+	if (totaly > 0.0001){
 		double correctiony = totaly/N;
 		for(int m=0; m<N; m++){
 			velocy[m] = velocy[m] - correctiony;
 		}
 	}
 
-	if (totalz != 0){
+	if (totalz > 0.0001){
 		double correctionz = totalz/N;
 		for(int n=0; n<N; n++){
 			velocz[n] = velocz[n] - correctionz;
