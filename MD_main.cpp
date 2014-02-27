@@ -148,7 +148,7 @@ void initveloc(){
 	
 	double r1, r2, r3, r4, r5, r6;//Variable Declarations
 	double totalx, totaly, totalz;
-
+	double prefactor = sqrt(kb/mAr)/100000;
 	srand((unsigned)time(0));
 
 	for(int j=0; j<N; j++){
@@ -158,9 +158,9 @@ void initveloc(){
 	r4 = number();
 	r5 = number(); 
 	r6 = number();
-	velocx[j] = 14.378/100000*sqrt(T)*sqrt(-2.0*log(r1))*cos(2.0*M_PI*r2); // Assigns a random velocity in a normal distribution
-	velocy[j] = 14.378/100000*sqrt(T)*sqrt(-2.0*log(r3))*cos(2.0*M_PI*r4); //14.378 is the sqrt(k/m) 
-	velocz[j] = 14.378/100000*sqrt(T)*sqrt(-2.0*log(r5))*cos(2.0*M_PI*r6);
+	velocx[j] = prefactor*sqrt(T)*sqrt(-2.0*log(r1))*cos(2.0*M_PI*r2); // Assigns a random velocity in a normal distribution
+	velocy[j] = prefactor*sqrt(T)*sqrt(-2.0*log(r3))*cos(2.0*M_PI*r4); //14.378 is the sqrt(k/m) 
+	velocz[j] = prefactor*sqrt(T)*sqrt(-2.0*log(r5))*cos(2.0*M_PI*r6);
 	}
 
 	for( int k=0; k<N; k++){
