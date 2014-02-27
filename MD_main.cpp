@@ -74,6 +74,7 @@ int main(){
 	printCoords();
 	initveloc();
 	printVel();
+	cout << "HEY why are all of the z velocities negative?! \n\n";
 	simulation();
 	cout << " Forces\n";
 	for (int i=0; i<10; i++){
