@@ -148,7 +148,7 @@ void printCoords(){
 void initveloc(){
 	
 	double r1, r2, r3, r4, r5, r6;//Variable Declarations
-	double totalx, totaly, totalz;
+	double totalx = 0, totaly = 0, totalz = 0;
 	double prefactor = sqrt(kb/mAr)/100000;
 	srand((unsigned)time(0));
 
@@ -169,27 +169,26 @@ void initveloc(){
 		totaly = totaly + velocy[k];
 		totalz = totalz + velocz[k];
 	}
-	if (totalx > 0.0001){
+	if ((totaly > 0.00001) || (totaly < -0.00001)){
 		double correctionx = totalx/N; // checks and corrections velocity to make total momentum 0
 		for (int l=0; l<N; l++){
 			velocx[l] = velocx[l] - correctionx;
 		}
 	}
 
-	if (totaly > 0.0001){
+	if ((totaly > 0.00001) || (totaly < -0.00001)){
 		double correctiony = totaly/N;
 		for(int m=0; m<N; m++){
 			velocy[m] = velocy[m] - correctiony;
 		}
 	}
 
-	if (totalz > 0.0001){
+	if ((totaly > 0.00001) || (totaly < -0.00001)){
 		double correctionz = totalz/N;
 		for(int n=0; n<N; n++){
 			velocz[n] = velocz[n] - correctionz;
 		}
 	}
-	
 }
 
 void simulation(){
