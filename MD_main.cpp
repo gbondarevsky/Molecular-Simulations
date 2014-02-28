@@ -8,7 +8,7 @@
 using namespace std;
 
 //Constants
-const double kb = 1.38065e-23; //m^2 kg /s^2 / K  Adam: Trust me leave it like this for now
+const double kb = 1.38065e-33; //m^2 kg /s^2 / K  Adam: Trust me leave it like this for now
 const double r = 15; //Distance from one particle to another.  We have to go redo the y and z directions at some point
 const double rh = r/2.0;
 const int N = 216; //Number of particles
@@ -149,7 +149,7 @@ void initveloc(){
 	
 	double r1, r2, r3, r4, r5, r6;//Variable Declarations
 	double totalx = 0, totaly = 0, totalz = 0;
-	double prefactor = sqrt(kb/mAr)/100000;
+	double prefactor = sqrt(kb/mAr);
 	srand((unsigned)time(0));
 
 	for(int j=0; j<N; j++){
@@ -286,7 +286,7 @@ double number(){
 }
 
 double kintemp(){
-	double c = mAr/N/kb;// Prefactor
+	double c = mAr/N/kb/3;// Prefactor
 	double kintemp = c*sumvsq;
 	return kintemp; 
 }
