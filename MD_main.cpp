@@ -236,6 +236,12 @@ void simulation(){
 	for(int t=1 ; t < 20; t++){
 		totLJ = 0;
 		sumvsq  = 0;
+        totalx = 0;
+        totaly = 0;
+        totalz = 0;
+        vxI = 0;
+        vyI = 0;
+        vzI = 0;
 		rmsvdt = sqrt(sumvsq/N)*dt;
 		for(int i=0; i < N; i++){
 			for(int j=0; j<i; j++){
