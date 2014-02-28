@@ -233,7 +233,7 @@ void simulation(){
 	neighbor();
 
 	//loop over time
-	for(int t=1 ; t < 2000; t++){
+	for(int t=1 ; t < 20000; t++){
 		totLJ = 0;
 		sumvsq  = 0;
         totalx = 0;
@@ -285,6 +285,7 @@ void simulation(){
 	printf( "Velocity: %12e     %12e     %12e \n", vxI, vyI, vzI);
 	pressure();
 	cout << "Pressure is " << p << "\n";
+    cout << "Total Energy is: " << totLJ + 0.5*sumvsq*mAr << "\n";
     /*cout << "\n\n rij \n";
         for (int i=0; i<10; i++){
             cout << "\n";
@@ -411,7 +412,7 @@ void Acceleration(){
 	}
 }
 void pressure(){
-	double virial;
+	double virial = 0;
 	for(int i=0; i<N; i++){
 		for( int j=0; j<i; j++){
 			virial = virial + dxij[i][j]*Fx[i][j] + dyij[i][j]*Fy[i][j] + dzij[i][j]*Fz[i][j];//Virial is the dot product of rij and fij
