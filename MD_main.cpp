@@ -9,18 +9,18 @@ using namespace std;
 
 //Constants
 const double kb = 1.38065e-33; //A^2 kg /fs^2 / K  Adam: Trust me leave it like this for now
-const double r = 3; //Distance from one particle to another.  We have to go redo the y and z directions at some point
+const double r = 15; //Distance from one particle to another.  We have to go redo the y and z directions at some point
 const double rh = r/2.0;
 const int N = 216; //Number of particles
 const int Nmax = N/3; //Maximum number of particles per plane
 const int xmax = 18; //Number of particles with unique x values in a single plane [Ask Gary].
-const double dt = 1; //Time step in femptoseconds
+const double dt = 0.5; //Time step in femptoseconds
 const double dt2 = 2*dt; //2*Time step
 const double dtsq = dt*dt; //Time step squared
 const double eps = 119.8*kb; //*0.001380649; // epsilon
 const double sig = 3.405; // sigma
 const double mAr = 39.9/6.02e23/1000; //Mass of an Ar atom in kg
-const double boxl = 2541; 
+const double boxl = 500;//In Angströms
 const double rcut = 2.5*sig; //Cutoff distance
 const double V = boxl*boxl*boxl;//Volume of the Box
 
@@ -233,7 +233,7 @@ void simulation(){
 	neighbor();
 
 	//loop over time
-	for(int t=1 ; t < 20; t++){
+	for(int t=1 ; t < 2000; t++){
 		totLJ = 0;
 		sumvsq  = 0;
         totalx = 0;
@@ -361,9 +361,11 @@ void neighbor(){
 void LJpot(){
 	for(int i=0; i<N; i++){
 		for(int j=0; j<i; j++){
-			LJ[i][j] = 4.0*eps*(pow(sig/rij[i][j],12) - pow(sig/rij[i][j],6));
-			totLJ = totLJ + LJ[i][j];
-		//	cout << totLJ << " ";	
+            //if(rij[i][j] < rcut){
+                LJ[i][j] = 4.0*eps*(pow(sig/rij[i][j],12) - pow(sig/rij[i][j],6));
+                totLJ = totLJ + LJ[i][j];
+                //	cout << totLJ << " ";
+            //}
 		}
 	}
 }
@@ -372,7 +374,7 @@ void LJpot(){
 void Forces(){	
     for(int j=0; j<N; j++){
     	for(int i=0; i<N; i++){
-    		if(neighborlist[i][j]==true){
+    		//if(rij[i][j] < rcut){
     			if(i > j){
 				Fx[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),7))*dxij[i][j]/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j]));
 				Fy[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),7))*dyij[i][j]/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j]));
@@ -389,7 +391,7 @@ void Forces(){
 				Fy[i][j] = -Fy[j][i];
 				Fz[i][j] = -Fz[j][i];
 				}
-			}
+			//}
        }
 	}		
 }
