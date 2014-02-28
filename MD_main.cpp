@@ -9,7 +9,7 @@ using namespace std;
 
 //Constants
 const double kb = 1.38065e-33; //A^2 kg /fs^2 / K  Adam: Trust me leave it like this for now
-const double r = 15; //Distance from one particle to another.  We have to go redo the y and z directions at some point
+const double r = 3; //Distance from one particle to another.  We have to go redo the y and z directions at some point
 const double rh = r/2.0;
 const int N = 216; //Number of particles
 const int Nmax = N/3; //Maximum number of particles per plane
@@ -170,7 +170,7 @@ void initveloc(){
 		totaly = totaly + velocy[k];
 		totalz = totalz + velocz[k];
 	}
-	if ((totaly > 0.00001) || (totaly < -0.00001)){
+	if ((totalx > 0.00001) || (totalx < -0.00001)){
 		double correctionx = totalx/N; // checks and corrections velocity to make total momentum 0
 		for (int l=0; l<N; l++){
 			velocx[l] = velocx[l] - correctionx;
@@ -184,7 +184,7 @@ void initveloc(){
 		}
 	}
 
-	if ((totaly > 0.00001) || (totaly < -0.00001)){
+	if ((totalz > 0.00001) || (totalz < -0.00001)){
 		double correctionz = totalz/N;
 		for(int n=0; n<N; n++){
 			velocz[n] = velocz[n] - correctionz;
@@ -279,6 +279,13 @@ void simulation(){
 	printf( "Velocity: %12e     %12e     %12e \n", vxI, vyI, vzI);
 	pressure();
 	cout << "Pressure is " << p << "\n";
+    /*cout << "\n\n rij \n";
+        for (int i=0; i<10; i++){
+            cout << "\n";
+            for (int j=0; j<10; j++){
+                printf( " %11e ", rij[i][j]);
+            }
+        }*/
 	}
 }
 
@@ -382,6 +389,11 @@ void Forces(){
 }
 
 void Acceleration(){
+    for (int i=0; i<N; i++) {
+        ax[i] = 0;
+        ay[i] = 0;
+        az[i] = 0;
+    }
 	for(int i=0; i<N; i++){
 		for(int j=0; j<N; j++){
 			ax[i] = ax[i] + Fx[i][j]/mAr;
