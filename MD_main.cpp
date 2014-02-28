@@ -8,7 +8,7 @@
 using namespace std;
 
 //Constants
-const double kb = 1.38065e-33; //m^2 kg /s^2 / K  Adam: Trust me leave it like this for now
+const double kb = 1.38065e-33; //A^2 kg /fs^2 / K  Adam: Trust me leave it like this for now
 const double r = 15; //Distance from one particle to another.  We have to go redo the y and z directions at some point
 const double rh = r/2.0;
 const int N = 216; //Number of particles
@@ -20,8 +20,9 @@ const double dtsq = dt*dt; //Time step squared
 const double eps = 119.8*kb; //*0.001380649; // epsilon
 const double sig = 3.405; // sigma
 const double mAr = 39.9/6.02e23/1000; //Mass of an Ar atom in kg
-const double boxl = 500; 
+const double boxl = 2541; 
 const double rcut = 2.5*sig; //Cutoff distance
+const double V = boxl*boxl*boxl;//Volume of the Box
 
 
 //Global Variables
@@ -29,7 +30,7 @@ double coords[N][3];
 double velocx[N];
 double velocy[N];
 double velocz[N];
-double T = 100;
+double T = 137;
 double rx[N];
 double ry[N];
 double rz[N];
@@ -51,6 +52,7 @@ double Fz[N][N];//Forces
 bool neighborlist[N][N]; //Neighbor List
 double totLJ; //Total potential energy
 double rmsvdt;
+double p;
 
 //Function Prototypes
 int genCoords();
@@ -74,7 +76,6 @@ int main(){
 	printCoords();
 	initveloc();
 	printVel();
-	cout << "HEY why are all of the z velocities negative?! \n\n";
 	simulation();
 	cout << " Forces\n";
 	for (int i=0; i<10; i++){
@@ -276,6 +277,8 @@ void simulation(){
 		}
 	cout <<"kinetic temperture is " << kintemp() << "     " ;
 	printf( "Velocity: %12e     %12e     %12e \n", vxI, vyI, vzI);
+	pressure();
+	cout << "Pressure is " << p << "\n";
 	}
 }
 
@@ -389,5 +392,11 @@ void Acceleration(){
 }
 void pressure(){
 	double virial;
-	double p = (N*kb*T /boxl /boxl / boxl) - virial;
+	for(int i=0; i<N; i++){
+		for( int j=0; j<i; j++){
+			virial = virial + dxij[i][j]*Fx[i][j] + dyij[i][j]*Fy[i][j] + dzij[i][j]*Fz[i][j];//Virial is the dot product of rij and fij
+		}
+	}
+	virial = virial/3/V;
+	p = (N*kb*T/V) - virial;
 }
