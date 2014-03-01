@@ -423,7 +423,7 @@ void pressure(){
 			virial = virial + coords[i][0]*Fx[i][j] + coords[i][1]*Fy[i][j] + coords[i][2]*Fz[i][j];//Virial is the dot product of rij and fij
 		}
 	}
-	virial = virial/3/V;
+	virial = virial/3/V;// Since we are using an attractive potential the virial must always be negative
 	if( virial > 0){
 		p = (N*kb*T/V) - virial;
 	}
