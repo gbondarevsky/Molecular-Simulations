@@ -20,7 +20,7 @@ const double dtsq = dt*dt; //Time step squared
 const double eps = 119.8*kb; //*0.001380649; // epsilon
 const double sig = 3.405; // sigma
 const double mAr = 39.9/6.02e23/1000; //Mass of an Ar atom in kg
-const double boxl = 500;//In Angströms
+const double boxl = 3000;//In Angströms
 const double rcut = 2.5*sig; //Cutoff distance
 const double V = boxl*boxl*boxl;//Volume of the Box
 
@@ -53,7 +53,8 @@ bool neighborlist[N][N]; //Neighbor List
 double totLJ; //Total potential energy
 double rmsvdt;
 double p;
-
+double totalE;
+double KE;
 //Function Prototypes
 int genCoords();
 void initveloc();
@@ -73,9 +74,10 @@ void pressure();
 
 int main(){
 	genCoords();
-	printCoords();
+	//printCoords();
 	initveloc();
-	printVel();
+	//printVel();
+	printf( "Time         TotalE        PE            KE            kintemp       pressure \n");	
 	simulation();
 	cout << " Forces\n";
 	for (int i=0; i<10; i++){
@@ -281,18 +283,14 @@ void simulation(){
 			rz[i] = rznewI;
 			
 		}
-	cout <<"kinetic temperture is " << kintemp() << "     " ;
-	printf( "Velocity: %12e     %12e     %12e \n", vxI, vyI, vzI);
 	pressure();
-	cout << "Pressure is " << p << "\n";
-    cout << "Total Energy is: " << totLJ + 0.5*sumvsq*mAr << "\n";
-    /*cout << "\n\n rij \n";
-        for (int i=0; i<10; i++){
-            cout << "\n";
-            for (int j=0; j<10; j++){
-                printf( " %11e ", rij[i][j]);
-            }
-        }*/
+	KE = 0.5*sumvsq*mAr;
+     	totalE = totLJ +KE;
+
+	if (t%500 == 0){
+        	printf("%6d    %10e   %10e    %10e    %10e    %10e\n ",t, totalE, totLJ, KE, kintemp(), p);   
+	}
+
 	}
 }
 
@@ -324,19 +322,19 @@ void cartDist(){
 //Cartesian Distances
 	for(int i=0; i<N; i++){
 		for(int j=0; j<i; j++){
-      		dxij[i][j] = minimage( rx[i], rx[j]);
-      		dyij[i][j] = minimage( ry[i], ry[j]);
-     		dzij[i][j] = minimage( rz[i], rz[j]);
+      		dxij[i][j] = abs(minimage( rx[i], rx[j]));
+      		dyij[i][j] = abs(minimage( ry[i], ry[j]));
+     		dzij[i][j] = abs(minimage( rz[i], rz[j]));
    		}
 	}
 }                
-
 //Min Image
 double minimage(double x1, double x2){
-    double dist = abs( x1 - x2);
-    dist = abs(dist - floor( dist/boxl + 0.5)*boxl);
+    double dist =  x1 - x2;
+    dist = dist - floor( dist/boxl + 0.5)*boxl;
     return dist;
 }
+
 
 //Distance Matrix
 void distMat(){
@@ -362,11 +360,11 @@ void neighbor(){
 void LJpot(){
 	for(int i=0; i<N; i++){
 		for(int j=0; j<i; j++){
-            //if(rij[i][j] < rcut){
+            if(rij[i][j] < rcut){
                 LJ[i][j] = 4.0*eps*(pow(sig/rij[i][j],12) - pow(sig/rij[i][j],6));
                 totLJ = totLJ + LJ[i][j];
                 //	cout << totLJ << " ";
-            //}
+            }
 		}
 	}
 }
@@ -375,7 +373,7 @@ void LJpot(){
 void Forces(){	
     for(int j=0; j<N; j++){
     	for(int i=0; i<N; i++){
-    		//if(rij[i][j] < rcut){
+    		if(rij[i][j] < rcut){
     			if(i > j){
 				Fx[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),7))*dxij[i][j]/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j]));
 				Fy[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),7))*dyij[i][j]/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j]));
@@ -392,7 +390,7 @@ void Forces(){
 				Fy[i][j] = -Fy[j][i];
 				Fz[i][j] = -Fz[j][i];
 				}
-			//}
+			}
        }
 	}		
 }
@@ -412,12 +410,20 @@ void Acceleration(){
 	}
 }
 void pressure(){
-	double virial = 0;
+	double virial;
+	for(int i=0; i<N; i++){
+		for(int j=0; j<i; j++){
+		coords[i][0] = minimage(rx[i], rx[j]);
+		coords[i][1] = minimage(ry[i], ry[j]);
+		coords[i][2] = minimage(rz[i], rz[j]);
+		}
+	}
 	for(int i=0; i<N; i++){
 		for( int j=0; j<i; j++){
-			virial = virial + dxij[i][j]*Fx[i][j] + dyij[i][j]*Fy[i][j] + dzij[i][j]*Fz[i][j];//Virial is the dot product of rij and fij
+			virial = virial + coords[i][0]*Fx[i][j] + coords[i][1]*Fy[i][j] + coords[i][2]*Fz[i][j];//Virial is the dot product of rij and fij
 		}
 	}
 	virial = virial/3/V;
 	p = (N*kb*T/V) - virial;
 }
+
