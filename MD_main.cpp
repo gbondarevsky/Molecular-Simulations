@@ -9,7 +9,7 @@ using namespace std;
 
 //Constants
 const double kb = 1.38065e-33; //A^2 kg /fs^2 / K  Adam: Trust me leave it like this for now
-const double r = 15; //Distance from one particle to another.  We have to go redo the y and z directions at some point
+const double r = 50; //Distance from one particle to another.  We have to go redo the y and z directions at some point
 const double rh = r/2.0;
 const int N = 216; //Number of particles
 const int Nmax = N/3; //Maximum number of particles per plane
@@ -20,7 +20,7 @@ const double dtsq = dt*dt; //Time step squared
 const double eps = 119.8*kb; //*0.001380649; // epsilon
 const double sig = 3.405; // sigma
 const double mAr = 39.9/6.02e23/1000; //Mass of an Ar atom in kg
-const double boxl = 3000;//In Angströms
+const double boxl = 5000;//In Angströms
 const double rcut = 2.5*sig; //Cutoff distance
 const double V = boxl*boxl*boxl;//Volume of the Box
 
@@ -424,6 +424,12 @@ void pressure(){
 		}
 	}
 	virial = virial/3/V;
-	p = (N*kb*T/V) - virial;
+	if( virial > 0){
+		p = (N*kb*T/V) - virial;
+	}
+	if( virial < 0){
+		p = (N*kb*T/V) + virial;
+	}
+
 }
 
