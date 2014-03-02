@@ -27,7 +27,7 @@ const double boxy = 8.0/20.0 * boxl;
 const double boxz = 3.0/20.0 * boxl;
 const double rcut = 2.5*sig; //Cutoff distance
 const double T = 119.8;
-
+const double LJcorr = 4*eps*pow(sig,6)*(pow(sig,6)/(9*pow(rcut,9))-1/(3*pow(rcut,3)));
 
 //Global Variables
 double coords[N][3];
@@ -382,6 +382,7 @@ void LJpot(){
             }
 		}
 	}
+        totLJ = totLJ + LJcorr;
 }
 
 //Forces - The expression is completely obvious and not something that you should probably ask Chad
