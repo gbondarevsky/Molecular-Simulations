@@ -9,20 +9,24 @@ using namespace std;
 
 //Constants
 const double kb = 1.38065e-33; //A^2 kg /fs^2 / K  Adam: Trust me leave it like this for now
-const double r = 50; //Distance from one particle to another.  We have to go redo the y and z directions at some point
+const double r = 3.45; //Distance from one particle to another.  We have to go redo the y and z directions at some point
 const double rh = r/2.0;
 const int N = 216; //Number of particles
 const int Nmax = N/3; //Maximum number of particles per plane
 const int xmax = 18; //Number of particles with unique x values in a single plane [Ask Gary].
-const double dt = 0.5; //Time step in femptoseconds
+const double dt = 0.0001; //Time step in femptoseconds
 const double dt2 = 2*dt; //2*Time step
 const double dtsq = dt*dt; //Time step squared
 const double eps = 119.8*kb; //*0.001380649; // epsilon
 const double sig = 3.405; // sigma
 const double mAr = 39.9/6.02e23/1000; //Mass of an Ar atom in kg
-const double boxl = 5000;//In Angströms
+const double V = 10659.0;//Volume of the Box
+const double boxl = 10.0/3.0 * pow(V,1.0/3.0);//In Angströms
+const double boxx = 9.0/20.0 * boxl;
+const double boxy = 8.0/20.0 * boxl;
+const double boxz = 3.0/20.0 * boxl;
 const double rcut = 2.5*sig; //Cutoff distance
-const double V = boxl*boxl*boxl;//Volume of the Box
+const double T = 119.8;
 
 
 //Global Variables
@@ -30,7 +34,6 @@ double coords[N][3];
 double velocx[N];
 double velocy[N];
 double velocz[N];
-double T = 137;
 double rx[N];
 double ry[N];
 double rz[N];
@@ -55,18 +58,19 @@ double rmsvdt;
 double p;
 double totalE;
 double KE;
+
 //Function Prototypes
 int genCoords();
 void initveloc();
 double number();
-double kintemp();
+double kintemp(double v);
 void printCoords();
 void printVel();
 void velScale();
 float totvelocsq();
 void simulation();
 void cartDist();
-double minimage(double x1,double x2);
+double minimage(double x1,double x2, double boxl);
 void distMat();
 void LJpot();
 void Forces();
@@ -78,8 +82,9 @@ int main(){
 	genCoords();
 	//printCoords();
 	initveloc();
+    velScale();
 	//printVel();
-	printf( "Time         TotalE        PE            KE            kintemp       pressure \n");	
+	printf( "Time (ps)         TotalE        PE            KE            kintemp       pressure \n");
 	simulation();
 	cout << " Forces\n";
 	for (int i=0; i<10; i++){
@@ -290,7 +295,7 @@ void simulation(){
      	totalE = totLJ +KE;
 
 	if (t%500 == 0){
-        	printf("%6d    %10e   %10e    %10e    %10e    %10e\n ",t, totalE, totLJ, KE, kintemp(), p);   
+        	printf("%6lf    %10lf   %10lf    %10lf    %10lf    %10e\n",(t*dt/1000), (totalE/kb/T), (totLJ/kb/T), (KE/kb/T), kintemp(sumvsq), p);
 	}
 
 	}
@@ -302,14 +307,14 @@ double number(){
 	return r;
 }
 
-double kintemp(){
+double kintemp(double v){
 	double c = mAr/N/kb/3;// Prefactor
-	double kintemp = c*sumvsq;
+	double kintemp = c*v;
 	return kintemp; 
 }
 
 float totvelocsq(){
-	float totvelocsq;
+	float totvelocsq = 0;
 	for(int i=0; i<N; i++){
 		totvelocsq = totvelocsq + velocx[i]*velocx[i] + velocy[i]*velocy[i] + velocz[i]*velocz[i];
 		}
@@ -322,7 +327,7 @@ cout << "Printing the components of velocity\n";
 	//	cout << velocx[i] << " | " << velocy[i] << " | " << velocz[i] << "\n";
 		printf( "%10f %10f %10f \n", velocx[i], velocy[i], velocz[i]) ;
 	}
-	double t = kintemp();
+	double t = kintemp(totvelocsq());
 
 	cout << "\n";
 	cout <<"The kinetic temperature is " << t << "\n";
@@ -332,14 +337,14 @@ void cartDist(){
 //Cartesian Distances
 	for(int i=0; i<N; i++){
 		for(int j=0; j<i; j++){
-      		dxij[i][j] = abs(minimage( rx[i], rx[j]));
-      		dyij[i][j] = abs(minimage( ry[i], ry[j]));
-     		dzij[i][j] = abs(minimage( rz[i], rz[j]));
+      		dxij[i][j] = abs(minimage( rx[i], rx[j], boxx));
+      		dyij[i][j] = abs(minimage( ry[i], ry[j], boxy));
+     		dzij[i][j] = abs(minimage( rz[i], rz[j], boxz));
    		}
 	}
 }                
 //Min Image
-double minimage(double x1, double x2){
+double minimage(double x1, double x2, double boxl){
     double dist =  x1 - x2;
     dist = dist - floor( dist/boxl + 0.5)*boxl;
     return dist;
@@ -350,7 +355,7 @@ double minimage(double x1, double x2){
 void distMat(){
 	for(int i=0; i<N; i++){
 		for(int j=0; j<i; j++){
-			rij[i][j] = sqrt(pow(minimage(rx[i],rx[j]),2) + pow(minimage(ry[i],ry[j]),2) + pow(minimage(rz[i],rz[j]),2));
+			rij[i][j] = sqrt(pow(minimage(rx[i],rx[j],boxx),2) + pow(minimage(ry[i],ry[j],boxy),2) + pow(minimage(rz[i],rz[j],boxz),2));
 		}
 	}
 }
@@ -420,12 +425,12 @@ void Acceleration(){
 	}
 }
 void pressure(){
-	double virial;
+	double virial = 0;
 	for(int i=0; i<N; i++){
 		for(int j=0; j<i; j++){
-		coords[i][0] = minimage(rx[i], rx[j]);
-		coords[i][1] = minimage(ry[i], ry[j]);
-		coords[i][2] = minimage(rz[i], rz[j]);
+		coords[i][0] = minimage(rx[i], rx[j],boxx);
+		coords[i][1] = minimage(ry[i], ry[j],boxy);
+		coords[i][2] = minimage(rz[i], rz[j],boxz);
 		}
 	}
 	for(int i=0; i<N; i++){
@@ -434,26 +439,24 @@ void pressure(){
 		}
 	}
 	virial = virial/3/V;// Since we are using an attractive potential the virial must always be negative
-	if( virial > 0){
-		p = (N*kb*T/V) - virial;
-	}
-	if( virial < 0){
-		p = (N*kb*T/V) + virial;
-	}
-
+	if((totLJ < 0) && (virial < 0)){p = (N*kb*T/V) - virial;}
+	else if((totLJ < 0) && (virial > 0)){p = (N*kb*T/V) + virial;}
+    else if((totLJ > 0) && (virial < 0)){p = (N*kb*T/V) + virial;}
+	else if((totLJ > 0) && (virial > 0)){p = (N*kb*T/V) - virial;}
+    else {p = (N*kb*T/V);}
 }
 
-
 void velScale(){
-	double Tt = kintemp();
+	double Tt = kintemp(totvelocsq());
 	double deltaT = abs(T - Tt);
-	for ( ; deltaT > 2; ){
+	for ( ; deltaT > 0.1; ){
 		for( int i=0; i<N; i++){
-			velocx[i] = ((T+100)/(Tt+100))*velocx[i]; //Makes the scaling go slower 
-			velocy[i] = ((T+100)/(Tt+100))*velocy[i];
-			velocz[i] = ((T+100)/(Tt+100))*velocz[i];
+			velocx[i] = ((T+1000)/(Tt+1000))*velocx[i]; //Makes the scaling go slower
+			velocy[i] = ((T+1000)/(Tt+1000))*velocy[i];
+			velocz[i] = ((T+1000)/(Tt+1000))*velocz[i];
 			}
-		Tt = kintemp();
+		Tt = kintemp(totvelocsq());
+        cout << Tt << "\n";
 		deltaT = abs( T -Tt);
 	}
 }
