@@ -8,67 +8,132 @@
 using namespace std;
 
 //Constants
-const float r = 15; //Distance from one particle to another.  We have to go redo the y and z directions at some point
-const float rh = r/2.0;
+const double kb = 1.38065e-33; //A^2 kg /fs^2 / K  Adam: Trust me leave it like this for now
+const double r = 50; //Distance from one particle to another.  We have to go redo the y and z directions at some point
+const double rh = r/2.0;
 const int N = 216; //Number of particles
 const int Nmax = N/3; //Maximum number of particles per plane
 const int xmax = 18; //Number of particles with unique x values in a single plane [Ask Gary].
-const float dt = 1; //Time step
-const float dt2 = 2*dt; //2*Time step
-const float dtsq = dt*dt; //Time step squared
+const double dt = 0.5; //Time step in femptoseconds
+const double dt2 = 2*dt; //2*Time step
+const double dtsq = dt*dt; //Time step squared
+const double eps = 119.8*kb; //*0.001380649; // epsilon
+const double sig = 3.405; // sigma
+const double mAr = 39.9/6.02e23/1000; //Mass of an Ar atom in kg
+const double boxl = 5000;//In Angströms
+const double rcut = 2.5*sig; //Cutoff distance
+const double V = boxl*boxl*boxl;//Volume of the Box
 
 
 //Global Variables
-float coords[N][3];
-float velocx[N];
-float velocy[N];
-float velocz[N];
-float T = 20;
-float rx[N];
-float ry[N];
-float rz[N];
-float ax[N];
-float ay[N];
-float az[N];
-float rxold[N];
-float ryold[N];
-float rzold[N];
-float sumvsq; //v^2
-
-
+double coords[N][3];
+double velocx[N];
+double velocy[N];
+double velocz[N];
+double T = 137;
+double rx[N];
+double ry[N];
+double rz[N];
+double ax[N];
+double ay[N];
+double az[N];
+double rxold[N];
+double ryold[N];
+double rzold[N];
+double sumvsq; //v^2
+double rij[N][N];//pair distances in terms of r
+double dxij[N][N];
+double dyij[N][N];
+double dzij[N][N];
+double LJ[N][N];//LJ potential
+double Fx[N][N];//Forces
+double Fy[N][N];//Forces
+double Fz[N][N];//Forces
+bool neighborlist[N][N]; //Neighbor List
+double totLJ; //Total potential energy
+double rmsvdt;
+double p;
+double totalE;
+double KE;
 //Function Prototypes
 int genCoords();
 void initveloc();
-float number();
-float kintemp();
+double number();
+double kintemp();
 void printCoords();
 void printVel();
 void velScale();
 float totvelocsq();
 void simulation();
+void cartDist();
+double minimage(double x1,double x2);
+void distMat();
+void LJpot();
+void Forces();
+void Acceleration();
+void neighbor();
+void pressure();
 
 int main(){
 	genCoords();
-	printCoords();
+	//printCoords();
 	initveloc();
-	printVel();
-	velScale();
-	printVel();
+	//printVel();
+	printf( "Time         TotalE        PE            KE            kintemp       pressure \n");	
 	simulation();
+	cout << " Forces\n";
+	for (int i=0; i<10; i++){
+		cout << "\n";
+		for (int j=0; j<10; j++){
+			printf( " %11e ", Fx[i][j]);
+		}
+	}
+	cout << "\n\n rij \n";
+	for (int i=0; i<10; i++){
+		cout << "\n";
+		for (int j=0; j<10; j++){
+			printf( " %11e ", rij[i][j]);
+		}
+	}
+	cout << "\n\n dxij\n";
+	for (int i=0; i<10; i++){
+		cout << "\n";
+		for (int j=0; j<10; j++){
+			printf( " %11e ", dxij[i][j]);
+		}
+	}
+	cout << "\n\n dyij\n";
+	for (int i=0; i<10; i++){
+		cout << "\n";
+		for (int j=0; j<10; j++){
+			printf( " %11e ", dyij[i][j]);
+		}
+	}
+	cout << "\n\n dzij\n";
+	for (int i=0; i<10; i++){
+		cout << "\n";
+		for (int j=0; j<10; j++){
+			printf( " %11e ", dzij[i][j]);
+		}
+	}
+	cout << "\n\n Accelerations\n";
+	for( int i=0; i<10; i++){
+		printf(" %11e %11e %11e \n", ax[i], ay[i], az[i]);
+		}
 
-    return 0;
+	return 0;
 }
 
 int genCoords(){
     for (int i = 0; i < N; i++){
-        coords[i][0] = (float(i%xmax)*rh) + (float(i/Nmax)*rh); //Fill all x coords
+        coords[i][0] = (double(i%xmax)*rh) + (double(i/Nmax)*rh); //Fill all x coords
     }
     for (int i = 0; i < N; i++){
-    	if (i%2 == 0){coords[i][1] = (float(2*((i%Nmax)/xmax))*r) + (float(i/Nmax)*rh);}
-    	else {coords[i][1] = (float(2*((i%Nmax)/xmax)+1)*r) + (float(i/Nmax)*rh);}
+    	if (i%2 == 0){coords[i][1] = (double(2*((i%Nmax)/xmax))*r) + (double(i/Nmax)*rh);}
+    	else {coords[i][1] = (double(2*((i%Nmax)/xmax)+1)*r) + (double(i/Nmax)*rh);}
     }
     for (int i = 0; i < N; i++){
-		coords[i][2] = float(i/Nmax)*r;
+		coords[i][2] = double(i/Nmax)*r;
     }
         return 0;
 }
@@ -87,21 +152,21 @@ void printCoords(){
 
 void initveloc(){
 	
-	float r1, r2, r3, r4, r5, r6;//Variable Declarations
-	float totalx, totaly, totalz;
-
+	double r1, r2, r3, r4, r5, r6;//Variable Declarations
+	double totalx = 0, totaly = 0, totalz = 0;
+	double prefactor = sqrt(kb/mAr);
 	srand((unsigned)time(0));
 
-	for(int j=0; j<215; j++){
+	for(int j=0; j<N; j++){
 	r1 = number();//Creates random numbers for the normal distributions
 	r2 = number();
 	r3 = number();
 	r4 = number();
 	r5 = number(); 
 	r6 = number();
-	velocx[j] = 14.378/100000*sqrt(T)*sqrt(-2.0*log(r1))*cos(2.0*M_PI*r2); // Assigns a random velocity in a normal distribution
-	velocy[j] = 14.378/100000*sqrt(T)*sqrt(-2.0*log(r3))*cos(2.0*M_PI*r4); //14.378 is the sqrt(k/m) 
-	velocz[j] = 14.378/100000*sqrt(T)*sqrt(-2.0*log(r5))*cos(2.0*M_PI*r6);
+	velocx[j] = prefactor*sqrt(T)*sqrt(-2.0*log(r1))*cos(2.0*M_PI*r2); // Assigns a random velocity in a normal distribution
+	velocy[j] = prefactor*sqrt(T)*sqrt(-2.0*log(r3))*cos(2.0*M_PI*r4); //14.378 is the sqrt(k/m) 
+	velocz[j] = prefactor*sqrt(T)*sqrt(-2.0*log(r5))*cos(2.0*M_PI*r6);
 	}
 
 	for( int k=0; k<N; k++){
@@ -109,69 +174,99 @@ void initveloc(){
 		totaly = totaly + velocy[k];
 		totalz = totalz + velocz[k];
 	}
-	if (totalx != 0){
-		float correctionx = totalx/N; // checks and corrections velocity to make total momentum 0
+	if ((totalx > 0.00001) || (totalx < -0.00001)){
+		double correctionx = totalx/N; // checks and corrections velocity to make total momentum 0
 		for (int l=0; l<N; l++){
 			velocx[l] = velocx[l] - correctionx;
 		}
 	}
 
-	if (totaly != 0){
-		float correctiony = totaly/N;
+	if ((totaly > 0.00001) || (totaly < -0.00001)){
+		double correctiony = totaly/N;
 		for(int m=0; m<N; m++){
 			velocy[m] = velocy[m] - correctiony;
 		}
 	}
 
-	if (totalz != 0){
-		float correctionz = totalz/N;
+	if ((totalz > 0.00001) || (totalz < -0.00001)){
+		double correctionz = totalz/N;
 		for(int n=0; n<N; n++){
 			velocz[n] = velocz[n] - correctionz;
 		}
 	}
-	
 }
 
 void simulation(){
-
+	//This converts coords file to cartesian positions
         for (int i = 0; i < 3; i++){
-		if(i == 0){
-			for (int j = 0; j < N; j++){
-                       		rx[j]=coords[j][0] ;
-               		}	
-		}
-		if(i == 1){
-			for (int j = 0; j < N; j++){
-                        	ry[j]=coords[j][1] ;
-                	}
-		}
-		if(i == 2){
-			for (int j = 0; j < N; j++){
-                        	rz[j]=coords[j][2] ;
-                	}
-		}
+			if(i == 0){
+				for (int j = 0; j < N; j++){
+                	rx[j]=coords[j][0] ;
+               	}	
+			}
+			if(i == 1){
+				for (int j = 0; j < N; j++){
+            		ry[j]=coords[j][1] ;
+            	}
+			}
+			if(i == 2){
+				for (int j = 0; j < N; j++){
+            		rz[j]=coords[j][2] ;
+            	}
+			}
         }
 	
+	//This predicts old positions
 	for (int j = 0; j < N; j++){
-        	rxold[j] = rx[j] - velocx[j] * dt  ;
-        	ryold[j] = ry[j] - velocy[j] * dt  ;
-        	rzold[j] = rz[j] - velocz[j] * dt  ;
-       	}
+        rxold[j] = rx[j] - velocx[j] * dt  ;
+        ryold[j] = ry[j] - velocy[j] * dt  ;
+        rzold[j] = rz[j] - velocz[j] * dt  ;
+    }
 
-	float totalx;
-	float totaly;
-	float totalz;
-	float rxnewI;
-	float rynewI;
-	float rznewI;
-	float vxI;
-	float vyI;
-	float vzI;
+	//Local variables used in Verlet algorithm
+	double totalx;
+	double totaly;
+	double totalz;
+	double rxnewI;
+	double rynewI;
+	double rznewI;
+	double vxI;
+	double vyI;
+	double vzI;
 
-	for(int t=1 ; t < 5; t++){
-	
+	neighbor();
+
+	//loop over time
+	for(int t=1 ; t < 20000; t++){
+		totLJ = 0;
+		sumvsq  = 0;
+        totalx = 0;
+        totaly = 0;
+        totalz = 0;
+        vxI = 0;
+        vyI = 0;
+        vzI = 0;
+		rmsvdt = sqrt(sumvsq/N)*dt;
+		for(int i=0; i < N; i++){
+			for(int j=0; j<i; j++){
+				if((rmsvdt > rij[i][j]-rcut) && (rij[i][j] > rcut)){
+					neighbor();
+					break;
+				}
+			}
+		}
+		//Distance Matrix
+            distMat();
+		//LJ Potential - Uses parameters for Argon
+            LJpot();
+         //Get Distance in Cartesians
+            cartDist();
+		//Forces
+	          Forces();
+		//Accelerations
+			Acceleration();
+		//Verlet Algorithm
 		for( int i=0; i<N; i++){
-
 			rxnewI = 2.0 * rx[i] - rxold[i] + dtsq * ax[i];
 			rynewI = 2.0 * ry[i] - ryold[i] + dtsq * ay[i];
 			rznewI = 2.0 * rz[i] - rzold[i] + dtsq * az[i];
@@ -179,7 +274,6 @@ void simulation(){
 			vyI = ( rynewI - ryold[i] ) / dt2;
 			vzI = ( rznewI - rzold[i] ) / dt2;
 			sumvsq = sumvsq + vxI * vxI + vyI * vyI + vzI * vzI;	
-//        		cout << sumvsq << " ";
 			totalx = totalx + vxI;
 			totaly = totaly + vyI;
 			totalz = totalz + vzI;
@@ -189,28 +283,34 @@ void simulation(){
 			rx[i] = rxnewI;
 			ry[i] = rynewI;
 			rz[i] = rznewI;
-
+			
 		}
-	}
-	
+	pressure();
+	KE = 0.5*sumvsq*mAr;
+     	totalE = totLJ +KE;
 
+	if (t%500 == 0){
+        	printf("%6d    %10e   %10e    %10e    %10e    %10e\n ",t, totalE, totLJ, KE, kintemp(), p);   
+	}
+
+	}
 }
 
-float number(){
+double number(){
 	rand(); rand(); rand(); // Magic
-	float r = (float(rand()) / float(RAND_MAX));// Returns a random number between 0 and 1
+	double r = (double(rand()) / double(RAND_MAX));// Returns a random number between 0 and 1
 	return r;
 }
 
-float kintemp(){
-	float c = 7.48e-6;// Prefactor
-	float kintemp = c*totvelocsq()*10000000000;
+double kintemp(){
+	double c = mAr/N/kb/3;// Prefactor
+	double kintemp = c*sumvsq;
 	return kintemp; 
 }
 
 float totvelocsq(){
 	float totvelocsq;
-	for(int i=0; i<215; i++){
+	for(int i=0; i<N; i++){
 		totvelocsq = totvelocsq + velocx[i]*velocx[i] + velocy[i]*velocy[i] + velocz[i]*velocz[i];
 		}
 	return totvelocsq;
@@ -218,19 +318,135 @@ float totvelocsq(){
 
 void printVel(){
 cout << "Printing the components of velocity\n";
-	for( int i=0; i<215; i++){
-		cout << velocx[i] << " | " << velocy[i] << " | " << velocz[i] << "\n";
+	for( int i=0; i<N; i++){
+	//	cout << velocx[i] << " | " << velocy[i] << " | " << velocz[i] << "\n";
+		printf( "%10f %10f %10f \n", velocx[i], velocy[i], velocz[i]) ;
 	}
-	float t = kintemp();
-	
+	double t = kintemp();
 
 	cout << "\n";
 	cout <<"The kinetic temperature is " << t << "\n";
 }
 
+void cartDist(){
+//Cartesian Distances
+	for(int i=0; i<N; i++){
+		for(int j=0; j<i; j++){
+      		dxij[i][j] = abs(minimage( rx[i], rx[j]));
+      		dyij[i][j] = abs(minimage( ry[i], ry[j]));
+     		dzij[i][j] = abs(minimage( rz[i], rz[j]));
+   		}
+	}
+}                
+//Min Image
+double minimage(double x1, double x2){
+    double dist =  x1 - x2;
+    dist = dist - floor( dist/boxl + 0.5)*boxl;
+    return dist;
+}
+
+
+//Distance Matrix
+void distMat(){
+	for(int i=0; i<N; i++){
+		for(int j=0; j<i; j++){
+			rij[i][j] = sqrt(pow(minimage(rx[i],rx[j]),2) + pow(minimage(ry[i],ry[j]),2) + pow(minimage(rz[i],rz[j]),2));
+		}
+	}
+}
+
+void neighbor(){
+	for(int i=0; i<N; i++){
+		for(int j=0; j<N; j++){ 
+			if(rij[i][j] < rcut)
+				neighborlist[i][j] = true;
+			else
+				neighborlist[i][j] = false;
+		}
+	}
+}
+
+//LJ Potential
+void LJpot(){
+	for(int i=0; i<N; i++){
+		for(int j=0; j<i; j++){
+            if(rij[i][j] < rcut){
+                LJ[i][j] = 4.0*eps*(pow(sig/rij[i][j],12) - pow(sig/rij[i][j],6));
+                totLJ = totLJ + LJ[i][j];
+                //	cout << totLJ << " ";
+            }
+		}
+	}
+}
+
+//Forces - The expression is completely obvious and not something that you should probably ask Chad
+void Forces(){	
+    for(int j=0; j<N; j++){
+    	for(int i=0; i<N; i++){
+    		if(rij[i][j] < rcut){
+    			if(i > j){
+				Fx[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),7))*dxij[i][j]/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j]));
+				Fy[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),7))*dyij[i][j]/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j]));
+				Fz[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),7))*dzij[i][j]/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j]));
+				
+				}
+				else if(i==j){
+				Fx[i][j] = 0;
+				Fy[i][j] = 0;
+				Fz[i][j] = 0;
+				}
+				else {
+				Fx[i][j] = -Fx[j][i];
+				Fy[i][j] = -Fy[j][i];
+				Fz[i][j] = -Fz[j][i];
+				}
+			}
+       }
+	}		
+}
+
+void Acceleration(){
+    for (int i=0; i<N; i++) {
+        ax[i] = 0;
+        ay[i] = 0;
+        az[i] = 0;
+    }
+	for(int i=0; i<N; i++){
+		for(int j=0; j<N; j++){
+			ax[i] = ax[i] + Fx[i][j]/mAr;
+			ay[i] = ay[i] + Fy[i][j]/mAr;
+			az[i] = az[i] + Fz[i][j]/mAr;
+		}
+	}
+}
+void pressure(){
+	double virial;
+	for(int i=0; i<N; i++){
+		for(int j=0; j<i; j++){
+		coords[i][0] = minimage(rx[i], rx[j]);
+		coords[i][1] = minimage(ry[i], ry[j]);
+		coords[i][2] = minimage(rz[i], rz[j]);
+		}
+	}
+	for(int i=0; i<N; i++){
+		for( int j=0; j<i; j++){
+			virial = virial + coords[i][0]*Fx[i][j] + coords[i][1]*Fy[i][j] + coords[i][2]*Fz[i][j];//Virial is the dot product of rij and fij
+		}
+	}
+	virial = virial/3/V;// Since we are using an attractive potential the virial must always be negative
+	if( virial > 0){
+		p = (N*kb*T/V) - virial;
+	}
+	if( virial < 0){
+		p = (N*kb*T/V) + virial;
+	}
+
+}
+
+
 void velScale(){
-	float Tt = kintemp();
-	float deltaT = abs(T - Tt);
+	double Tt = kintemp();
+	double deltaT = abs(T - Tt);
 	for ( ; deltaT > 2; ){
 		for( int i=0; i<N; i++){
 			velocx[i] = ((T+100)/(Tt+100))*velocx[i]; //Makes the scaling go slower 
