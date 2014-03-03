@@ -4,30 +4,33 @@
 #include <cmath>
 #include <ctime>
 #include <cstdlib>
+#include <string>
+#include <sstream>
 
 using namespace std;
 
 //Constants
 const double kb = 1.38065e-33; //A^2 kg /fs^2 / K  Adam: Trust me leave it like this for now
-const double r = 3.45; //Distance from one particle to another.  We have to go redo the y and z directions at some point
+const double V = 10659.0;//Volume of the Box
+const double boxl = 10.0/3.0 * pow(V,double(1.0/3.0));//In Angströms
+const double boxx = 9.0/20.0 * boxl;
+const double boxy = 8.0/20.0 * boxl;
+const double boxz = 3.0/20.0 * boxl;
+const double r = boxx/9.0; //Distance from one particle to another.  We have to go redo the y and z directions at some point
 const double rh = r/2.0;
 const int N = 216; //Number of particles
 const int Nmax = N/3; //Maximum number of particles per plane
 const int xmax = 18; //Number of particles with unique x values in a single plane [Ask Gary].
-const double dt = 0.0001; //Time step in femptoseconds
+const double dt = 0.1; //Time step in femptoseconds
 const double dt2 = 2*dt; //2*Time step
 const double dtsq = dt*dt; //Time step squared
 const double eps = 119.8*kb; //*0.001380649; // epsilon
 const double sig = 3.405; // sigma
 const double mAr = 39.9/6.02e23/1000; //Mass of an Ar atom in kg
-const double V = 10659.0;//Volume of the Box
-const double boxl = 10.0/3.0 * pow(V,1.0/3.0);//In Angströms
-const double boxx = 9.0/20.0 * boxl;
-const double boxy = 8.0/20.0 * boxl;
-const double boxz = 3.0/20.0 * boxl;
 const double rcut = 2.5*sig; //Cutoff distance
 const double T = 119.8;
 const double LJcorr = 4*eps*pow(sig,6)*(pow(sig,6)/(9*pow(rcut,9))-1/(3*pow(rcut,3)));
+const int totalsteps = 20000;
 
 //Global Variables
 double coords[N][3];
@@ -64,13 +67,13 @@ int genCoords();
 void initveloc();
 double number();
 double kintemp(double v);
-void printCoords();
+void printCoords(int i);
 void printVel();
 void velScale();
 float totvelocsq();
 void simulation();
 void cartDist();
-double minimage(double x1,double x2, double boxl);
+double minimage(double x1,double x2, double boxparam);
 void distMat();
 void LJpot();
 void Forces();
@@ -80,6 +83,7 @@ void pressure();
 
 int main(){
 	genCoords();
+    //cout << boxx << " " << boxy << " " << boxz << " " << boxl << " ";
 	//printCoords();
 	initveloc();
     velScale();
@@ -143,16 +147,23 @@ int genCoords(){
         return 0;
 }
 
-void printCoords(){
-	cout << N << "\n";
-	cout << "#" << "\n";
+void printCoords(int i){
+    std::stringstream sstm;
+    sstm << "coords" << i << ".xyz";
+    string filename = sstm.str();
+    //string filename = "coords" + i + ".xyz";
+    ofstream myfile;
+    myfile.open (filename);
+	myfile << N << "\n";
+	myfile << "#" << "\n";
 	for (int j = 0; j < N; j++){
-				cout << "Ar ";
-                for (int i = 0; i < 3; i++){
-                        cout << coords[j][i] << " ";
-                }
-                cout << "\n";
+        myfile << "Ar ";
+        myfile << rx[j] << " ";
+        myfile << ry[j] << " ";
+        myfile << rz[j] << " ";
+        myfile << "\n";
         }
+    myfile.close();
 }
 
 void initveloc(){
@@ -239,10 +250,10 @@ void simulation(){
 	double vyI;
 	double vzI;
 
-	neighbor();
+	//neighbor();
 
 	//loop over time
-	for(int t=1 ; t < 20000; t++){
+	for(int t=1 ; t < totalsteps; t++){
 		totLJ = 0;
 		sumvsq  = 0;
         totalx = 0;
@@ -251,7 +262,7 @@ void simulation(){
         vxI = 0;
         vyI = 0;
         vzI = 0;
-		rmsvdt = sqrt(sumvsq/N)*dt;
+		/*rmsvdt = sqrt(sumvsq/N)*dt;
 		for(int i=0; i < N; i++){
 			for(int j=0; j<i; j++){
 				if((rmsvdt > rij[i][j]-rcut) && (rij[i][j] > rcut)){
@@ -259,7 +270,7 @@ void simulation(){
 					break;
 				}
 			}
-		}
+		}*/
 		//Distance Matrix
             distMat();
 		//LJ Potential - Uses parameters for Argon
@@ -295,8 +306,9 @@ void simulation(){
      	totalE = totLJ +KE;
 
 	if (t%500 == 0){
-        	printf("%6lf    %10lf   %10lf    %10lf    %10lf    %10e\n",(t*dt/1000), (totalE/kb/T), (totLJ/kb/T), (KE/kb/T), kintemp(sumvsq), p);
-	}
+        printf("%6lf    %10e   %10e    %10e    %10e    %10e\n",(t*dt/1000), (totalE), (totLJ), (KE), kintemp(sumvsq), p);
+        printCoords(t);
+        }
 
 	}
 }
@@ -344,9 +356,9 @@ void cartDist(){
 	}
 }                
 //Min Image
-double minimage(double x1, double x2, double boxl){
+double minimage(double x1, double x2, double boxparam){
     double dist =  x1 - x2;
-    dist = dist - floor( dist/boxl + 0.5)*boxl;
+    dist = dist - floor( dist/boxparam + 0.5)*boxparam;
     return dist;
 }
 
@@ -380,21 +392,61 @@ void LJpot(){
                 totLJ = totLJ + LJ[i][j];
                 //	cout << totLJ << " ";
             }
+            else {LJ[i][j] = 0;}
 		}
 	}
         totLJ = totLJ + LJcorr;
 }
 
 //Forces - The expression is completely obvious and not something that you should probably ask Chad
-void Forces(){	
-    for(int j=0; j<N; j++){
-    	for(int i=0; i<N; i++){
+void Forces(){
+    for(int i=0; i<N; i++){
+        for(int j=0; j<i; j++){
+            if(rij[i][j] < rcut){
+                //cout << rij[i][j]<<"\n";
+                //double R = sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j]);
+                Fx[i][j] = 24*eps*((2*pow(sig,12)/pow(rij[i][j],13) - pow(sig,6)/pow(rij[i][j],7)) * dxij[i][j]/rij[i][j]);
+                Fy[i][j] = 24*eps*((2*pow(sig,12)/pow(rij[i][j],13) - pow(sig,6)/pow(rij[i][j],7)) * dyij[i][j]/rij[i][j]);
+                Fz[i][j] = 24*eps*((2*pow(sig,12)/pow(rij[i][j],13) - pow(sig,6)/pow(rij[i][j],7)) * dzij[i][j]/rij[i][j]);
+            }
+            else {
+                Fx[i][i] = 0;
+                Fy[i][i] = 0;
+                Fz[i][i] = 0;
+            }
+        }
+    }
+    for (int i=0; i<N; i++) {
+        Fx[i][i] = 0;
+        Fy[i][i] = 0;
+        Fz[i][i] = 0;
+    }
+    for (int i=0; i<N; i++) {
+        for (int j=i; j<N; j++) {
+            if (rij[j][i] < rcut) {
+                Fx[i][j] = -Fx[j][i];
+                Fy[i][j] = -Fy[j][i];
+                Fz[i][j] = -Fz[j][i];
+            }
+            else {
+                Fx[i][i] = 0;
+                Fy[i][i] = 0;
+                Fz[i][i] = 0;
+            }
+        }
+    }
+    /*for(int i=0; i<N; i++){
+    	for(int j=0; j<i; j++){
     		if(rij[i][j] < rcut){
     			if(i > j){
-				Fx[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),7))*dxij[i][j]/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j]));
-				Fy[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),7))*dyij[i][j]/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j]));
-				Fz[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),7))*dzij[i][j]/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j]));
-				
+                    //cout << rij[i][j]<<"\n";
+                    //double R = sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j]);
+                    Fx[i][j] = 24*eps*((2*pow(sig,12)/pow(rij[i][j],13) - pow(sig,6)/pow(rij[i][j],7)) * dxij[i][j]/rij[i][j]);
+                    Fy[i][j] = 24*eps*((2*pow(sig,12)/pow(rij[i][j],13) - pow(sig,6)/pow(rij[i][j],7)) * dyij[i][j]/rij[i][j]);
+                    Fz[i][j] = 24*eps*((2*pow(sig,12)/pow(rij[i][j],13) - pow(sig,6)/pow(rij[i][j],7)) * dzij[i][j]/rij[i][j]);
+				//Fx[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),7))*dxij[i][j]/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j]));
+				//Fy[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),7))*dyij[i][j]/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j]));
+				//Fz[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),7))*dzij[i][j]/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j]));
 				}
 				else if(i==j){
 				Fx[i][j] = 0;
@@ -407,8 +459,13 @@ void Forces(){
 				Fz[i][j] = -Fz[j][i];
 				}
 			}
+            else {
+                Fx[i][j] = 0;
+				Fy[i][j] = 0;
+				Fz[i][j] = 0;
+            }
        }
-	}		
+	}*/
 }
 
 void Acceleration(){
@@ -457,7 +514,7 @@ void velScale(){
 			velocz[i] = ((T+1000)/(Tt+1000))*velocz[i];
 			}
 		Tt = kintemp(totvelocsq());
-        cout << Tt << "\n";
+        //cout << Tt << "\n";
 		deltaT = abs( T -Tt);
 	}
 }
