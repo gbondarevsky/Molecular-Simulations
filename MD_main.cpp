@@ -400,14 +400,16 @@ void LJpot(){
 
 //Forces - The expression is completely obvious and not something that you should probably ask Chad
 void Forces(){
+    double c;
     for(int i=0; i<N; i++){
         for(int j=0; j<i; j++){
             if(rij[i][j] < rcut){
+                c = 24.0*eps*(2.0*pow(sig,12.0)/pow(rij[i][j],13.0) - pow(sig,6.0)/pow(rij[i][j],7.0))/rij[i][j];
                 //cout << rij[i][j]<<"\n";
                 //double R = sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j]);
-                Fx[i][j] = 24*eps*((2*pow(sig,12)/pow(rij[i][j],13) - pow(sig,6)/pow(rij[i][j],7)) * dxij[i][j]/rij[i][j]);
-                Fy[i][j] = 24*eps*((2*pow(sig,12)/pow(rij[i][j],13) - pow(sig,6)/pow(rij[i][j],7)) * dyij[i][j]/rij[i][j]);
-                Fz[i][j] = 24*eps*((2*pow(sig,12)/pow(rij[i][j],13) - pow(sig,6)/pow(rij[i][j],7)) * dzij[i][j]/rij[i][j]);
+                Fx[i][j] = c*dxij[i][j];
+                Fy[i][j] = c*dyij[i][j];
+                Fz[i][j] = c*dzij[i][j];
             }
             else {
                 Fx[i][i] = 0;
