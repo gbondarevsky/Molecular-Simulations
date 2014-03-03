@@ -9,12 +9,10 @@ using namespace std;
 
 //Constants
 const double kb = 1.38065e-33; //A^2 kg /fs^2 / K  Adam: Trust me leave it like this for now
-const double r = 3.45; //Distance from one particle to another.  We have to go redo the y and z directions at some point
-const double rh = r/2.0;
 const int N = 216; //Number of particles
 const int Nmax = N/3; //Maximum number of particles per plane
 const int xmax = 18; //Number of particles with unique x values in a single plane [Ask Gary].
-const double dt = 0.0001; //Time step in femptoseconds
+const double dt = 0.001; //Time step in femptoseconds
 const double dt2 = 2*dt; //2*Time step
 const double dtsq = dt*dt; //Time step squared
 const double eps = 119.8*kb; //*0.001380649; // epsilon
@@ -28,6 +26,12 @@ const double boxz = 3.0/20.0 * boxl;
 const double rcut = 2.5*sig; //Cutoff distance
 const double T = 119.8;
 const double LJcorr = 4*eps*pow(sig,6)*(pow(sig,6)/(9*pow(rcut,9))-1/(3*pow(rcut,3)));
+const double rmin = 3.5; //Chad's potential-energy-is-too-damn-high hypothesis
+const double xmin = 3.5; //Chad's potential-energy-is-too-damn-high hypothesis
+const double ymin = 3.5; //Chad's potential-energy-is-too-damn-high hypothesis
+const double zmin = 3.5; //Chad's potential-energy-is-too-damn-high hypothesis
+const double r = boxx/9; //Distance from one particle to another.  We have to go redo the y and z directions at some point
+const double rh = r/2.0;
 
 //Global Variables
 double coords[N][3];
@@ -242,7 +246,7 @@ void simulation(){
 	neighbor();
 
 	//loop over time
-	for(int t=1 ; t < 20000; t++){
+	for(int t=1 ; t < 10000000; t++){
 		totLJ = 0;
 		sumvsq  = 0;
         totalx = 0;
@@ -375,10 +379,17 @@ void neighbor(){
 void LJpot(){
 	for(int i=0; i<N; i++){
 		for(int j=0; j<i; j++){
-            if(rij[i][j] < rcut){
+            if(rij[i][j] < rcut && rij[i][j] > rmin){
                 LJ[i][j] = 4.0*eps*(pow(sig/rij[i][j],12) - pow(sig/rij[i][j],6));
                 totLJ = totLJ + LJ[i][j];
                 //	cout << totLJ << " ";
+            }
+            if(rij[i][j] > rcut){
+                LJ[i][j] = 0.0;
+            }
+            if(rij[i][j] < rmin){
+                LJ[i][j] = 4.0*eps*(pow(sig/rmin,12) - pow(sig/rmin,6));
+                totLJ = totLJ + LJ[i][j];
             }
 		}
 	}
@@ -389,7 +400,7 @@ void LJpot(){
 void Forces(){	
     for(int j=0; j<N; j++){
     	for(int i=0; i<N; i++){
-    		if(rij[i][j] < rcut){
+    		if(rij[i][j] < rcut && rij[i][j] > rmin){
     			if(i > j){
 				Fx[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),7))*dxij[i][j]/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j]));
 				Fy[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),7))*dyij[i][j]/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j]));
@@ -397,9 +408,32 @@ void Forces(){
 				
 				}
 				else if(i==j){
-				Fx[i][j] = 0;
-				Fy[i][j] = 0;
-				Fz[i][j] = 0;
+				Fx[i][j] = 0.0;
+				Fy[i][j] = 0.0;
+				Fz[i][j] = 0.0;
+				}
+				else {
+				Fx[i][j] = -Fx[j][i];
+				Fy[i][j] = -Fy[j][i];
+				Fz[i][j] = -Fz[j][i];
+				}
+			}
+                   if(rij[i][j] > rcut){
+                            Fx[i][j]=0.0;
+                            Fy[i][j]=0.0;
+                            Fz[i][j]=0.0;
+                        }
+    		if(rij[i][j] < rmin){
+    			if(i > j){
+				Fx[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(xmin*xmin+ymin*ymin+zmin*zmin)),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(xmin*xmin+ymin*ymin+zmin*zmin)),7))*dxij[i][j]/(sqrt(xmin*xmin+ymin*ymin+zmin*zmin));
+				Fy[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(xmin*xmin+ymin*ymin+zmin*zmin)),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(xmin*xmin+ymin*ymin+zmin*zmin)),7))*dyij[i][j]/(sqrt(xmin*xmin+ymin*ymin+zmin*zmin));
+				Fz[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(xmin*xmin+ymin*ymin+zmin*zmin)),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(xmin*xmin+ymin*ymin+zmin*zmin)),7))*dzij[i][j]/(sqrt(xmin*xmin+ymin*ymin+zmin*zmin));
+				
+				}
+				else if(i==j){
+				Fx[i][j] = 0.0;
+				Fy[i][j] = 0.0;
+				Fz[i][j] = 0.0;
 				}
 				else {
 				Fx[i][j] = -Fx[j][i];
