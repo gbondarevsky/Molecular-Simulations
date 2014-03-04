@@ -4,6 +4,8 @@
 #include <cmath>
 #include <ctime>
 #include <cstdlib>
+#include <string>
+#include <sstream>
 
 using namespace std;
 
@@ -12,7 +14,7 @@ const double kb = 1.38065e-33; //A^2 kg /fs^2 / K  Adam: Trust me leave it like 
 const int N = 216; //Number of particles
 const int Nmax = N/3; //Maximum number of particles per plane
 const int xmax = 18; //Number of particles with unique x values in a single plane [Ask Gary].
-const double dt = 0.001; //Time step in femptoseconds
+const double dt = 0.1; //Time step in femptoseconds
 const double dt2 = 2*dt; //2*Time step
 const double dtsq = dt*dt; //Time step squared
 const double eps = 119.8*kb; //*0.001380649; // epsilon
@@ -26,12 +28,13 @@ const double boxz = 3.0/20.0 * boxl;
 const double rcut = 2.5*sig; //Cutoff distance
 const double T = 119.8;
 const double LJcorr = 4*eps*pow(sig,6)*(pow(sig,6)/(9*pow(rcut,9))-1/(3*pow(rcut,3)));
-const double rmin = 3.5; //Chad's potential-energy-is-too-damn-high hypothesis
-const double xmin = 3.5; //Chad's potential-energy-is-too-damn-high hypothesis
-const double ymin = 3.5; //Chad's potential-energy-is-too-damn-high hypothesis
-const double zmin = 3.5; //Chad's potential-energy-is-too-damn-high hypothesis
+const double rmin = 1.0; //Chad's potential-energy-is-too-damn-high hypothesis
+const double xmin = 1.0; //Chad's potential-energy-is-too-damn-high hypothesis
+const double ymin = 1.0; //Chad's potential-energy-is-too-damn-high hypothesis
+const double zmin = 1.0; //Chad's potential-energy-is-too-damn-high hypothesis
 const double r = boxx/9; //Distance from one particle to another.  We have to go redo the y and z directions at some point
 const double rh = r/2.0;
+const int totalT = 100000;
 
 //Global Variables
 double coords[N][3];
@@ -68,7 +71,7 @@ int genCoords();
 void initveloc();
 double number();
 double kintemp(double v);
-void printCoords();
+void printCoords(int i);
 void printVel();
 void velScale();
 float totvelocsq();
@@ -147,16 +150,23 @@ int genCoords(){
         return 0;
 }
 
-void printCoords(){
-	cout << N << "\n";
-	cout << "#" << "\n";
-	for (int j = 0; j < N; j++){
-				cout << "Ar ";
-                for (int i = 0; i < 3; i++){
-                        cout << coords[j][i] << " ";
-                }
-                cout << "\n";
+void printCoords(int i){
+    std::stringstream sstm;
+    sstm << "coords" << i << ".xyz";
+    string filename = sstm.str();
+    //string filename = "coords" + i + ".xyz";
+    ofstream myfile;
+    myfile.open (filename.c_str());
+    myfile << N << "\n";
+    myfile << "#" << "\n";
+    for (int j = 0; j < N; j++){
+        myfile << "Ar ";
+        myfile << rx[j] << " ";
+        myfile << ry[j] << " ";
+        myfile << rz[j] << " ";
+        myfile << "\n";
         }
+    myfile.close();
 }
 
 void initveloc(){
@@ -246,7 +256,7 @@ void simulation(){
 	neighbor();
 
 	//loop over time
-	for(int t=1 ; t < 10000000; t++){
+	for(int t=1 ; t < totalT; t++){
 		totLJ = 0;
 		sumvsq  = 0;
         totalx = 0;
@@ -300,6 +310,7 @@ void simulation(){
 
 	if (t%500 == 0){
         	printf("%6lf    %10lf   %10lf    %10lf    %10lf    %10e\n",(t*dt/1000), (totalE/kb/T), (totLJ/kb/T), (KE/kb/T), kintemp(sumvsq), p);
+                printCoords(t);
 	}
 
 	}
@@ -340,10 +351,10 @@ cout << "Printing the components of velocity\n";
 void cartDist(){
 //Cartesian Distances
 	for(int i=0; i<N; i++){
-		for(int j=0; j<i; j++){
-      		dxij[i][j] = abs(minimage( rx[i], rx[j], boxx));
-      		dyij[i][j] = abs(minimage( ry[i], ry[j], boxy));
-     		dzij[i][j] = abs(minimage( rz[i], rz[j], boxz));
+		for(int j=0; j<N; j++){
+      		dxij[i][j] = minimage( rx[i], rx[j], boxx);
+      		dyij[i][j] = minimage( ry[i], ry[j], boxy);
+     		dzij[i][j] = minimage( rz[i], rz[j], boxz);
    		}
 	}
 }                
@@ -400,12 +411,19 @@ void LJpot(){
 void Forces(){	
     for(int j=0; j<N; j++){
     	for(int i=0; i<N; i++){
+		Fx[i][j] = 0.0;
+		Fy[i][j] = 0.0;
+		Fz[i][j] = 0.0;
+        }
+    }
+    for(int j=0; j<N; j++){
+    	for(int i=0; i<N; i++){
     		if(rij[i][j] < rcut && rij[i][j] > rmin){
     			if(i > j){
-				Fx[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),7))*dxij[i][j]/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j]));
-				Fy[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),7))*dyij[i][j]/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j]));
-				Fz[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j])),7))*dzij[i][j]/(sqrt(dxij[i][j]*dxij[i][j]+dyij[i][j]*dyij[i][j]+dzij[i][j]*dzij[i][j]));
-				
+				Fx[i][j] = 24*eps*(2*pow(sig,12)*pow(rij[i][j],-13)-pow(sig,6)*pow(rij[i][j],-7))*dxij[i][j]/rij[i][j];
+				Fy[i][j] = 24*eps*(2*pow(sig,12)*pow(rij[i][j],-13)-pow(sig,6)*pow(rij[i][j],-7))*dyij[i][j]/rij[i][j];
+				Fz[i][j] = 24*eps*(2*pow(sig,12)*pow(rij[i][j],-13)-pow(sig,6)*pow(rij[i][j],-7))*dzij[i][j]/rij[i][j];
+			
 				}
 				else if(i==j){
 				Fx[i][j] = 0.0;
@@ -425,9 +443,9 @@ void Forces(){
                         }
     		if(rij[i][j] < rmin){
     			if(i > j){
-				Fx[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(xmin*xmin+ymin*ymin+zmin*zmin)),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(xmin*xmin+ymin*ymin+zmin*zmin)),7))*dxij[i][j]/(sqrt(xmin*xmin+ymin*ymin+zmin*zmin));
-				Fy[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(xmin*xmin+ymin*ymin+zmin*zmin)),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(xmin*xmin+ymin*ymin+zmin*zmin)),7))*dyij[i][j]/(sqrt(xmin*xmin+ymin*ymin+zmin*zmin));
-				Fz[i][j] = -12.0*eps/(pow(2.0,1.0/6.0)*sig)*(pow(pow(2.0,1.0/6.0)*sig/(sqrt(xmin*xmin+ymin*ymin+zmin*zmin)),13) - pow(pow(2.0,1.0/6.0)*sig/(sqrt(xmin*xmin+ymin*ymin+zmin*zmin)),7))*dzij[i][j]/(sqrt(xmin*xmin+ymin*ymin+zmin*zmin));
+				Fx[i][j] = 24*eps*(2*pow(sig,12)*pow(rmin,-13)-pow(sig,6)*pow(rmin,-7))*dxij[i][j]/rmin;
+				Fy[i][j] = 24*eps*(2*pow(sig,12)*pow(rmin,-13)-pow(sig,6)*pow(rmin,-7))*dyij[i][j]/rmin;
+				Fz[i][j] = 24*eps*(2*pow(sig,12)*pow(rmin,-13)-pow(sig,6)*pow(rmin,-7))*dzij[i][j]/rmin;
 				
 				}
 				else if(i==j){
