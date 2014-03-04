@@ -9,6 +9,12 @@
 
 using namespace std;
 
+// Phase       T        V
+//  Gas       131.8   85272
+// Liquid     119.8   10659
+// Solid      119.8   6560
+// SuperCrit  300     10659
+
 //Constants
 const double kb = 1.38065e-33; //A^2 kg /fs^2 / K  Adam: Trust me leave it like this for now
 const double V = 10659.0;//Volume of the Box
