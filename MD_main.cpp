@@ -153,7 +153,7 @@ void printCoords(int i){
     string filename = sstm.str();
     //string filename = "coords" + i + ".xyz";
     ofstream myfile;
-    myfile.open (filename);
+    myfile.open (filename.c_str());
 	myfile << N << "\n";
 	myfile << "#" << "\n";
 	for (int j = 0; j < N; j++){
@@ -349,9 +349,9 @@ void cartDist(){
 //Cartesian Distances
 	for(int i=0; i<N; i++){
 		for(int j=0; j<i; j++){
-      		dxij[i][j] = abs(minimage( rx[i], rx[j], boxx));
-      		dyij[i][j] = abs(minimage( ry[i], ry[j], boxy));
-     		dzij[i][j] = abs(minimage( rz[i], rz[j], boxz));
+      		dxij[i][j] = minimage( rx[i], rx[j], boxx);
+      		dyij[i][j] = minimage( ry[i], ry[j], boxy);
+     		dzij[i][j] = minimage( rz[i], rz[j], boxz);
    		}
 	}
 }                
