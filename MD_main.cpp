@@ -17,7 +17,7 @@ using namespace std;
 
 //Constants
 const double kb = 1.38065e-33; //A^2 kg /fs^2 / K  Adam: Trust me leave it like this for now
-const double V = 10659.0;//Volume of the Box
+const double V = 6560.0;//Volume of the Box
 const double boxl = 10.0/3.0 * pow(V,double(1.0/3.0));//In Angströms
 const double boxx = 9.0/20.0 * boxl;
 const double boxy = 8.0/20.0 * boxl;
@@ -27,7 +27,7 @@ const double rh = r/2.0;
 const int N = 216; //Number of particles
 const int Nmax = N/3; //Maximum number of particles per plane
 const int xmax = 18; //Number of particles with unique x values in a single plane [Ask Gary].
-const double dt = 0.1; //Time step in femptoseconds
+const double dt = 0.5; //Time step in femptoseconds
 const double dt2 = 2*dt; //2*Time step
 const double dtsq = dt*dt; //Time step squared
 const double eps = 119.8*kb; //*0.001380649; // epsilon
@@ -37,6 +37,7 @@ const double rcut = 2.5*sig; //Cutoff distance
 const double T = 119.8;
 const double LJcorr = 4*eps*pow(sig,6)*(pow(sig,6)/(9*pow(rcut,9))-1/(3*pow(rcut,3)));
 const int totalsteps = 20000;
+const double conv_p = sig*sig*sig/eps;
 
 //Global Variables
 double coords[N][3];
@@ -94,9 +95,9 @@ int main(){
 	initveloc();
     velScale();
 	//printVel();
-	printf( "Time (ps)         TotalE        PE            KE            kintemp       pressure \n");
+	printf( "Time(ps),TotalE,PE,KE,kintemp,pressure\n");
 	simulation();
-	cout << " Forces\n";
+/*	cout << " Forces\n";
 	for (int i=0; i<10; i++){
 		cout << "\n";
 		for (int j=0; j<10; j++){
@@ -135,7 +136,7 @@ int main(){
 	for( int i=0; i<10; i++){
 		printf(" %11e %11e %11e \n", ax[i], ay[i], az[i]);
 		}
-
+*/
 	return 0;
 }
 
@@ -312,7 +313,7 @@ void simulation(){
      	totalE = totLJ +KE;
 
 	if (t%500 == 0){
-        printf("%6lf    %10e   %10e    %10e    %10e    %10e\n",(t*dt/1000), (totalE), (totLJ), (KE), kintemp(sumvsq), p);
+        printf("%6lf,%10lf,%10lf,%10lf,%10lf,%10lf\n",(t*dt/1000), (totalE/kb/T), (totLJ/kb/T), (KE/kb/T), kintemp(sumvsq), p*conv_p);
         printCoords(t);
         }
 
