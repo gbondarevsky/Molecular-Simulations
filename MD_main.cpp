@@ -42,7 +42,7 @@ const double LJcorr = 0.5*N*(N-1)*4*eps*pow(sig,6)*(pow(sig,6)/(9*pow(rcut,9))-1
 const int totalsteps = 20000;
 const double conv_p = sig*sig*sig/eps;
 const double rt = 25.0; //Radius of the nanotube
-const double ks = 0.0001;//Need to figure out spring constant
+const double ks = 0.1;//Need to figure out spring constant
 
 //Global Variables
 double coords[N][3];
@@ -160,18 +160,18 @@ int main(){
 int genCoords(){
     for (int i = 0; i < N; i++){
     	if(i<Na){ coords[i][0] = (double(i%xmax)*rh) + (double(i/Nmax)*rh);} //Fill all x coords
-	else{coords[i][0] = tube[i-Na][0];}
+        else{coords[i][0] = tube[i-Na][0];}
     }
     for (int i = 0; i < N; i++){
     	if(i<Na){
-		if (i%2 == 0){coords[i][1] = (double(2*((i%Nmax)/xmax))*r) + (double(i/Nmax)*rh);}
+            if (i%2 == 0){coords[i][1] = (double(2*((i%Nmax)/xmax))*r) + (double(i/Nmax)*rh);}
     		else {coords[i][1] = (double(2*((i%Nmax)/xmax)+1)*r) + (double(i/Nmax)*rh);}
 	}
-	else{coords[i][1] = tube[i-Na][1];}
+        else{coords[i][1] = tube[i-Na][1];}
     }
     for (int i = 0; i < N; i++){
-	if(i<Na){coords[i][2] = double(i/Nmax)*r;}
-    	else{coords[i][2] = tube[i-Na][2];	}
+        if(i<Na){coords[i][2] = double(i/Nmax)*r;}
+    	else{coords[i][2] = tube[i-Na][2];}
 	}
     return 0;
 }
@@ -381,12 +381,12 @@ void cartDist(){
       		dxij[i][j] = minimage( rx[i], rx[j], boxx);
       		dyij[i][j] = minimage( ry[i], ry[j], boxy);
      		dzij[i][j] = minimage( rz[i], rz[j], boxz);
-   		if(i >= Na){
+		}
+        if(i >= Na){
 			tubeDx[i-Na] = minimage( rx[i], tube[i-Na][0], boxx);
 			tubeDy[i-Na] = minimage( ry[i], tube[i-Na][1], boxy);
 			tubeDz[i-Na] = minimage( rz[i], tube[i-Na][2], boxz);
-			}
-		}
+        }
 	}
 }                
 //Min Image
@@ -402,10 +402,10 @@ void distMat(){
 	for(int i=0; i<N; i++){
 		for(int j=0; j<i; j++){
 			rij[i][j] = sqrt(pow(minimage(rx[i],rx[j],boxx),2) + pow(minimage(ry[i],ry[j],boxy),2) + pow(minimage(rz[i],rz[j],boxz),2));
-            if(i >= Na){
-                tubeRij[i-Na] =  pow(minimage(rx[i],tube[i-Na][0],boxx),2) + pow(minimage(ry[i], tube[i-Na][1],boxy),2) + pow(minimage(rz[i],tube[i-Na][2],boxz),2);
-            }
 		}
+        if(i >= Na){
+            tubeRij[i-Na] =  pow(minimage(rx[i],tube[i-Na][0],boxx),2) + pow(minimage(ry[i], tube[i-Na][1],boxy),2) + pow(minimage(rz[i],tube[i-Na][2],boxz),2);
+        }
 	}
 }
 
@@ -528,12 +528,12 @@ void Acceleration(){
 			ax[i] = ax[i] + Fx[i][j]/mAr;
 			ay[i] = ay[i] + Fy[i][j]/mAr;
 			az[i] = az[i] + Fz[i][j]/mAr;
-			if(i>Na){
-				ax[i] = ax[i] + tubeFx[i-Na]/mAr;
-				ay[i] = ax[i] + tubeFy[i-Na]/mAr;
-				az[i] = ax[i] + tubeFz[i-Na]/mAr;
-			}
 		}
+        if(i >= Na){
+            ax[i] = ax[i] + tubeFx[i-Na]/mAr;
+            ay[i] = ax[i] + tubeFy[i-Na]/mAr;
+            az[i] = ax[i] + tubeFz[i-Na]/mAr;
+        }
 	}
 }
 void pressure(){
