@@ -18,7 +18,7 @@ using namespace std;
 
 //Constants
 const double kb = 1.38065e-33; //A^2 kg /fs^2 / K  Adam: Trust me leave it like this for now
-const double V = 1000000.0;//Volume of the Box
+const double V = 10000000.0;//Volume of the Box
 const double boxl = 10.0/3.0 * pow(V,double(1.0/3.0));//In Angströms
 const double boxx = 9.0/20.0 * boxl;
 const double boxy = 8.0/20.0 * boxl;
@@ -41,8 +41,8 @@ const double T = 60.0;
 const double LJcorr = 0.5*N*(N-1)*4*eps*pow(sig,6)*(pow(sig,6)/(9*pow(rcut,9))-1/(3*pow(rcut,3)));
 const int totalsteps = 20000;
 const double conv_p = sig*sig*sig/eps;
-const double rt = 5.0;
-const double ks = 0.0;//Need to figure out spring constant
+const double rt = 25.0; //Radius of the nanotube
+const double ks = 0.0001;//Need to figure out spring constant
 
 //Global Variables
 double coords[N][3];
@@ -160,18 +160,18 @@ int main(){
 int genCoords(){
     for (int i = 0; i < N; i++){
     	if(i<Na){ coords[i][0] = (double(i%xmax)*rh) + (double(i/Nmax)*rh);} //Fill all x coords
-	else{coords[i][0] = tube[i-216][0];}
+	else{coords[i][0] = tube[i-Na][0];}
     }
     for (int i = 0; i < N; i++){
     	if(i<Na){
 		if (i%2 == 0){coords[i][1] = (double(2*((i%Nmax)/xmax))*r) + (double(i/Nmax)*rh);}
     		else {coords[i][1] = (double(2*((i%Nmax)/xmax)+1)*r) + (double(i/Nmax)*rh);}
 	}
-	else{coords[i][1] = tube[i-216][1];}
+	else{coords[i][1] = tube[i-Na][1];}
     }
     for (int i = 0; i < N; i++){
 	if(i<Na){coords[i][2] = double(i/Nmax)*r;}
-    	else{coords[i][2] = tube[i-216][2];	}
+    	else{coords[i][2] = tube[i-Na][2];	}
 	}
     return 0;
 }
@@ -381,7 +381,7 @@ void cartDist(){
       		dxij[i][j] = minimage( rx[i], rx[j], boxx);
       		dyij[i][j] = minimage( ry[i], ry[j], boxy);
      		dzij[i][j] = minimage( rz[i], rz[j], boxz);
-   		if(i>Na){
+   		if(i >= Na){
 			tubeDx[i-Na] = minimage( rx[i], tube[i-Na][0], boxx);
 			tubeDy[i-Na] = minimage( ry[i], tube[i-Na][1], boxy);
 			tubeDz[i-Na] = minimage( rz[i], tube[i-Na][2], boxz);
@@ -402,8 +402,8 @@ void distMat(){
 	for(int i=0; i<N; i++){
 		for(int j=0; j<i; j++){
 			rij[i][j] = sqrt(pow(minimage(rx[i],rx[j],boxx),2) + pow(minimage(ry[i],ry[j],boxy),2) + pow(minimage(rz[i],rz[j],boxz),2));
-            if(i>Na){
-                tubeRij[i] =  pow(minimage(rx[i],tube[i][0],boxx),2) + pow(minimage(ry[i], tube[i][1],boxy),2) + pow(minimage(rz[i],tube[i][2],boxz),2);
+            if(i >= Na){
+                tubeRij[i-Na] =  pow(minimage(rx[i],tube[i-Na][0],boxx),2) + pow(minimage(ry[i], tube[i-Na][1],boxy),2) + pow(minimage(rz[i],tube[i-Na][2],boxz),2);
             }
 		}
 	}
@@ -431,7 +431,7 @@ void LJpot(){
             }
             else {LJ[i][j] = 0;}
 		}
-        if(i>Na){
+        if(i >= Na){
             Spring[i-Na] = 0.5*ks*tubeRij[i-Na];
             totLJ = totLJ + Spring[i-Na];
         }
