@@ -18,27 +18,30 @@ using namespace std;
 
 //Constants
 const double kb = 1.38065e-33; //A^2 kg /fs^2 / K  Adam: Trust me leave it like this for now
-const double V = 10659.0;//Volume of the Box
+const double V = 6560.0;//Volume of the Box
 const double boxl = 10.0/3.0 * pow(V,double(1.0/3.0));//In Angströms
 const double boxx = 9.0/20.0 * boxl;
 const double boxy = 8.0/20.0 * boxl;
-const double boxz = 3.0/20.0 * boxl;
+const double boxz = 3.0/10.0 * boxl;//Ten doubles the boxlength in the z direction
 const double r = boxx/10.0; //Distance from one particle to another.  We have to go redo the y and z directions at some point
 const double rh = r/2.0;
-const int N = 216; //Number of particles
-const int Nmax = N/3; //Maximum number of particles per plane
+const int N = 280; //Number of particles
+const int Na = 216;//Number of Free argon
+const int Nmax = Na/3; //Maximum number of particles per plane
 const int xmax = 18; //Number of particles with unique x values in a single plane [Ask Gary].
-const double dt = 0.1; //Time step in femptoseconds
+const double dt = 0.5; //Time step in femptoseconds
 const double dt2 = 2*dt; //2*Time step
 const double dtsq = dt*dt; //Time step squared
 const double eps = 119.8*kb; //*0.001380649; // epsilon
 const double sig = 3.405; // sigma
 const double mAr = 39.9/6.02e23/1000; //Mass of an Ar atom in kg
 const double rcut = 2.5*sig; //Cutoff distance
-const double T = 105;
+const double T = 119.8;
 const double LJcorr = 0.5*N*(N-1)*4*eps*pow(sig,6)*(pow(sig,6)/(9*pow(rcut,9))-1/(3*pow(rcut,3)));
-const int totalsteps = 200000;
+const int totalsteps = 60001;
 const double conv_p = sig*sig*sig/eps;
+const double rt = 5.0;
+const double ks = 0.0;//Need to figure out spring constant
 
 //Global Variables
 double coords[N][3];
@@ -69,6 +72,15 @@ double rmsvdt;
 double p;
 double totalE;
 double KE;
+double tube[64][3];
+double tubeDx[N-Na];
+double tubeDy[N-Na];
+double tubeDz[N-Na];
+double tubeRij[N-Na];
+double Spring[N-Na];
+double tubeFx[N-Na];
+double tubeFy[N-Na];
+double tubeFz[N-Na];
 
 //Function Prototypes
 int genCoords();
@@ -88,15 +100,18 @@ void Forces();
 void Acceleration();
 void neighbor();
 void pressure();
+void tubeinit();
 
 int main(){
+	cout << cos(M_PI);
+	tubeinit();
 	genCoords();
+	
     //cout << boxx << " " << boxy << " " << boxz << " " << boxl << " ";
-	//printCoords();
 	initveloc();
     velScale();
 	//printVel();
-	printf( "Time(ps),TotalE,PE,KE,kintemp,pressure\n");
+	//printf( "Time(ps),TotalE,PE,KE,kintemp,pressure\n");
 	simulation();
 /*	cout << " Forces\n";
 	for (int i=0; i<10; i++){
@@ -143,16 +158,21 @@ int main(){
 
 int genCoords(){
     for (int i = 0; i < N; i++){
-        coords[i][0] = (double(i%xmax)*rh) + (double(i/Nmax)*rh); //Fill all x coords
+    	if(i<Na){ coords[i][0] = (double(i%xmax)*rh) + (double(i/Nmax)*rh);} //Fill all x coords
+	else{coords[i][0] = tube[i-216][0];}
     }
     for (int i = 0; i < N; i++){
-    	if (i%2 == 0){coords[i][1] = (double(2*((i%Nmax)/xmax))*r) + (double(i/Nmax)*rh);}
-    	else {coords[i][1] = (double(2*((i%Nmax)/xmax)+1)*r) + (double(i/Nmax)*rh);}
+    	if(i<Na){
+		if (i%2 == 0){coords[i][1] = (double(2*((i%Nmax)/xmax))*r) + (double(i/Nmax)*rh);}
+    		else {coords[i][1] = (double(2*((i%Nmax)/xmax)+1)*r) + (double(i/Nmax)*rh);}
+	}
+	else{coords[i][1] = tube[i-216][1];}
     }
     for (int i = 0; i < N; i++){
-		coords[i][2] = double(i/Nmax)*r;
-    }
-        return 0;
+	if(i<Na){coords[i][2] = double(i/Nmax)*r;}
+    	else{coords[i][2] = tube[i-216][2];	}
+	}
+    return 0;
 }
 
 void printCoords(int i){
@@ -166,9 +186,9 @@ void printCoords(int i){
 	myfile << "#" << "\n";
 	for (int j = 0; j < N; j++){
         myfile << "Ar ";
-        myfile << rx[j] << " ";
-        myfile << ry[j] << " ";
-        myfile << rz[j] << " ";
+        myfile << coords[j][0] << " ";
+        myfile << coords[j][1] << " ";
+        myfile << coords[j][2] << " ";
         myfile << "\n";
         }
     myfile.close();
@@ -314,7 +334,7 @@ void simulation(){
      	totalE = totLJ +KE;
 
 	if (t%500 == 0){
-        printf("%6lf,%10lf,%10lf,%10lf,%10lf,%10lf\n",(t*dt/1000), (totalE/kb/T), (totLJ/kb/T), (KE/kb/T), (kintemp(sumvsq)), p*conv_p);
+        printf("%6lf,%10lf,%10lf,%10lf,%10lf,%10lf\n",(t*dt/1000), (totalE/kb/T), (totLJ/kb/T), (KE/kb/T), kintemp(sumvsq), p*conv_p);
         printCoords(t);
         }
 
@@ -360,7 +380,15 @@ void cartDist(){
       		dxij[i][j] = minimage( rx[i], rx[j], boxx);
       		dyij[i][j] = minimage( ry[i], ry[j], boxy);
      		dzij[i][j] = minimage( rz[i], rz[j], boxz);
-   		}
+   		if(i>Na){
+			tubeDx[i-Na] = minimage( rx[i], tube[i-Na][0], boxx);
+			tubeDy[i-Na] = minimage( ry[i], tube[i-Na][1], boxy);
+			tubeDz[i-Na] = minimage( rz[i], tube[i-Na][2], boxz);
+			
+			
+		
+			}
+		}
 	}
 }                
 //Min Image
@@ -376,6 +404,9 @@ void distMat(){
 	for(int i=0; i<N; i++){
 		for(int j=0; j<i; j++){
 			rij[i][j] = sqrt(pow(minimage(rx[i],rx[j],boxx),2) + pow(minimage(ry[i],ry[j],boxy),2) + pow(minimage(rz[i],rz[j],boxz),2));
+		if(i>Na){	
+		tubeRij[i] =  sqrt(pow(minimage(rx[i],tube[i][0],boxx),2) + pow(minimage(ry[i], tube[i][1],boxy),2) + pow(minimage(rz[i],tube[i][2],boxz),2));
+		}
 		}
 	}
 }
@@ -397,6 +428,10 @@ void LJpot(){
 		for(int j=0; j<i; j++){
             if(rij[i][j] < rcut){
                 LJ[i][j] = 4.0*eps*(pow(sig/rij[i][j],12) - pow(sig/rij[i][j],6));
+		if(i>Na){
+			Spring[i-Na] = 0.5*ks*tubeRij[i-Na];
+			totLJ = totLJ + Spring[i-Na];
+		}
                 totLJ = totLJ + LJ[i][j];
                 //	cout << totLJ << " ";
             }
@@ -418,7 +453,10 @@ void Forces(){
                 Fx[i][j] = c*dxij[i][j];
                 Fy[i][j] = c*dyij[i][j];
                 Fz[i][j] = c*dzij[i][j];
-            }
+                tubeFx[i-Na] = -ks*tubeDx[i-Na];
+		tubeFy[i-Na] = -ks*tubeDy[i-Na];
+		tubeFz[i-Na] = -ks*tubeDz[i-Na];
+		}
             else {
                 Fx[i][j] = 0;
                 Fy[i][j] = 0;
@@ -489,6 +527,11 @@ void Acceleration(){
 			ax[i] = ax[i] + Fx[i][j]/mAr;
 			ay[i] = ay[i] + Fy[i][j]/mAr;
 			az[i] = az[i] + Fz[i][j]/mAr;
+			if(i>Na){
+				ax[i] = ax[i] + tubeFx[i-Na]/mAr;
+				ay[i] = ax[i] + tubeFy[i-Na]/mAr;
+				az[i] = ax[i] + tubeFz[i-Na]/mAr;
+			}
 		}
 	}
 }
@@ -528,3 +571,20 @@ void velScale(){
 		deltaT = abs( T -Tt);
 	}
 }
+
+void tubeinit(){
+	double xnot = boxx/2.0;
+	double ynot = boxy/2.0;
+	double znot = boxz/2.0;
+	double theta = M_PI/4.0;
+	for(int i=0; i<64; i++){
+		theta = theta + M_PI/4.0;
+		if((i%8) == 0){
+			theta  = theta + M_PI/8.0;
+			znot  = znot + pow(2.0, (1.0/6.0))*sig;
+		}
+		tube[i][0] = rt*cos (theta) + xnot;
+		tube[i][1] = rt*sin (theta) + ynot;
+		tube[i][2] = znot;
+	}
+} 
