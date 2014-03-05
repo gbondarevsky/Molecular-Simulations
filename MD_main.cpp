@@ -442,7 +442,7 @@ void LJpot(){
 //Forces - The expression is completely obvious and not something that you should probably ask Chad
 void Forces(){
     double c;
-    for(int i=0; i<Na; i++){
+    for(int i=0; i<N; i++){
         for(int j=0; j<i; j++){
             if(rij[i][j] < rcut){
                 c = 24.0*eps*(2.0*pow(sig,12.0)/pow(rij[i][j],13.0) - pow(sig,6.0)/pow(rij[i][j],7.0))/rij[i][j];
