@@ -39,10 +39,10 @@ const double mAr = 39.9/6.02e23/1000; //Mass of an Ar atom in kg
 const double rcut = 2.5*sig; //Cutoff distance
 const double T = 60.0;
 const double LJcorr = 0.5*N*(N-1)*4*eps*pow(sig,6)*(pow(sig,6)/(9*pow(rcut,9))-1/(3*pow(rcut,3)));
-const int totalsteps = 20000;
+const int totalsteps = 100000;
 const double conv_p = sig*sig*sig/eps;
-const double rt = 25.0; //Radius of the nanotube
-const double ks = 0.1;//Need to figure out spring constant
+const double rt = 50.0; //Radius of the nanotube
+const double ks = 0;//Need to figure out spring constant
 
 //Global Variables
 double coords[N][3];
@@ -107,7 +107,6 @@ int main(){
 	//cout << cos(M_PI);
 	tubeinit();
 	genCoords();
-    printCoords(0);
     //cout << boxx << " " << boxy << " " << boxz << " " << boxl << " ";
 	initveloc();
     velScale();
@@ -187,9 +186,9 @@ void printCoords(int i){
 	myfile << "#" << "\n";
 	for (int j = 0; j < N; j++){
         myfile << "Ar ";
-        myfile << coords[j][0] << " ";
-        myfile << coords[j][1] << " ";
-        myfile << coords[j][2] << " ";
+        myfile << rx[j] << " ";
+        myfile << ry[j] << " ";
+        myfile << rz[j] << " ";
         myfile << "\n";
         }
     myfile.close();
@@ -358,7 +357,7 @@ float totvelocsq(){
 	float totvelocsq = 0;
 	for(int i=0; i<N; i++){
 		totvelocsq = totvelocsq + velocx[i]*velocx[i] + velocy[i]*velocy[i] + velocz[i]*velocz[i];
-		}
+    }
 	return totvelocsq;
 }
 
@@ -395,7 +394,6 @@ double minimage(double x1, double x2, double boxparam){
     dist = dist - floor( dist/boxparam + 0.5)*boxparam;
     return dist;
 }
-
 
 //Distance Matrix
 void distMat(){
