@@ -37,12 +37,12 @@ const double eps = 119.8*kb; //*0.001380649; // epsilon
 const double sig = 3.405; // sigma
 const double mAr = 39.9/6.02e23/1000; //Mass of an Ar atom in kg
 const double rcut = 2.5*sig; //Cutoff distance
-const double T = 60.0;
+const double T = 100.0;
 const double LJcorr = 0.5*N*(N-1)*4*eps*pow(sig,6)*(pow(sig,6)/(9*pow(rcut,9))-1/(3*pow(rcut,3)));
 const int totalsteps = 100000;
 const double conv_p = sig*sig*sig/eps;
-const double rt = 50.0; //Radius of the nanotube
-const double ks = 0;//Need to figure out spring constant
+const double rt = 25.0; //Radius of the nanotube
+const double ks = 1e-30;//Need to figure out spring constant
 
 //Global Variables
 double coords[N][3];
@@ -381,12 +381,17 @@ void cartDist(){
       		dyij[i][j] = minimage( ry[i], ry[j], boxy);
      		dzij[i][j] = minimage( rz[i], rz[j], boxz);
 		}
-        if(i >= Na){
-			tubeDx[i-Na] = minimage( rx[i], tube[i-Na][0], boxx);
-			tubeDy[i-Na] = minimage( ry[i], tube[i-Na][1], boxy);
-			tubeDz[i-Na] = minimage( rz[i], tube[i-Na][2], boxz);
-        }
+        //if(i >= Na){
+		//	tubeDx[i-Na] = minimage( rx[i], tube[i-Na][0], boxx);
+		//	tubeDy[i-Na] = minimage( ry[i], tube[i-Na][1], boxy);
+		//	tubeDz[i-Na] = minimage( rz[i], tube[i-Na][2], boxz);
+        //}
 	}
+    for (int i=Na; i<N; i++) {
+        tubeDx[i-Na] = minimage( rx[i], tube[i-Na][0], boxx);
+        tubeDy[i-Na] = minimage( ry[i], tube[i-Na][1], boxy);
+        tubeDz[i-Na] = minimage( rz[i], tube[i-Na][2], boxz);
+    }
 }                
 //Min Image
 double minimage(double x1, double x2, double boxparam){
@@ -401,10 +406,13 @@ void distMat(){
 		for(int j=0; j<i; j++){
 			rij[i][j] = sqrt(pow(minimage(rx[i],rx[j],boxx),2) + pow(minimage(ry[i],ry[j],boxy),2) + pow(minimage(rz[i],rz[j],boxz),2));
 		}
-        if(i >= Na){
-            tubeRij[i-Na] =  pow(minimage(rx[i],tube[i-Na][0],boxx),2) + pow(minimage(ry[i], tube[i-Na][1],boxy),2) + pow(minimage(rz[i],tube[i-Na][2],boxz),2);
-        }
+        //if(i >= Na){
+        //    tubeRij[i-Na] =  pow(minimage(rx[i],tube[i-Na][0],boxx),2) + pow(minimage(ry[i], tube[i-Na][1],boxy),2) + pow(minimage(rz[i],tube[i-Na][2],boxz),2);
+        //}
 	}
+    for (int i=Na; i<N; i++) {
+        tubeRij[i-Na] =  pow(minimage(rx[i],tube[i-Na][0],boxx),2) + pow(minimage(ry[i], tube[i-Na][1],boxy),2) + pow(minimage(rz[i],tube[i-Na][2],boxz),2);
+    }
 }
 
 void neighbor(){
@@ -429,11 +437,15 @@ void LJpot(){
             }
             else {LJ[i][j] = 0;}
 		}
-        if(i >= Na){
-            Spring[i-Na] = 0.5*ks*tubeRij[i-Na];
-            totLJ = totLJ + Spring[i-Na];
-        }
+        //if(i >= Na){
+        //    Spring[i-Na] = 0.5*ks*tubeRij[i-Na];
+        //    totLJ = totLJ + Spring[i-Na];
+        //}
 	}
+    for (int i=Na; i<N; i++) {
+        Spring[i-Na] = 0.5*ks*tubeRij[i-Na];
+        totLJ = totLJ + Spring[i-Na];
+    }
         totLJ = totLJ + LJcorr;
 }
 
@@ -527,12 +539,17 @@ void Acceleration(){
 			ay[i] = ay[i] + Fy[i][j]/mAr;
 			az[i] = az[i] + Fz[i][j]/mAr;
 		}
-        if(i >= Na){
-            ax[i] = ax[i] + tubeFx[i-Na]/mAr;
-            ay[i] = ax[i] + tubeFy[i-Na]/mAr;
-            az[i] = ax[i] + tubeFz[i-Na]/mAr;
-        }
+        //if(i >= Na){
+        //    ax[i] = ax[i] + tubeFx[i-Na]/mAr;
+        //    ay[i] = ax[i] + tubeFy[i-Na]/mAr;
+        //    az[i] = ax[i] + tubeFz[i-Na]/mAr;
+        //}
 	}
+    for (int i=Na; i<N; i++) {
+        ax[i] = ax[i] + tubeFx[i-Na]/mAr;
+        ay[i] = ax[i] + tubeFy[i-Na]/mAr;
+        az[i] = ax[i] + tubeFz[i-Na]/mAr;
+    }
 }
 void pressure(){
 	double virial = 0;
