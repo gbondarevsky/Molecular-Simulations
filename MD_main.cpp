@@ -30,19 +30,19 @@ const int Nt = 64; //Number of particles in nanotube
 const int N = Na + Nt; //Number of particles
 const int Nmax = Na/3; //Maximum number of particles per plane
 const int xmax = 18; //Number of particles with unique x values in a single plane [Ask Gary].
-const double dt = 0.1; //Time step in femptoseconds
+const double dt = 0.05; //Time step in femptoseconds
 const double dt2 = 2*dt; //2*Time step
 const double dtsq = dt*dt; //Time step squared
 const double eps = 119.8*kb; //*0.001380649; // epsilon
 const double sig = 3.405; // sigma
 const double mAr = 39.9/6.02e23/1000; //Mass of an Ar atom in kg
 const double rcut = 2.5*sig; //Cutoff distance
-const double T = 100.0;
+const double T = 80.0;
 const double LJcorr = 0.5*N*(N-1)*4*eps*pow(sig,6)*(pow(sig,6)/(9*pow(rcut,9))-1/(3*pow(rcut,3)));
-const int totalsteps = 100000;
+const int totalsteps = 2400000;
 const double conv_p = sig*sig*sig/eps;
-const double rt = 25.0; //Radius of the nanotube
-const double ks = 1e-30;//Need to figure out spring constant
+const double rt = 10.0; //Radius of the nanotube
+const double ks = 5.0e-25;//Need to figure out spring constant
 
 //Global Variables
 double coords[N][3];
@@ -202,6 +202,7 @@ void initveloc(){
 	srand((unsigned)time(0));
 
 	for(int j=0; j<N; j++){
+	if(j<Na){
 	r1 = number();//Creates random numbers for the normal distributions
 	r2 = number();
 	r3 = number();
@@ -212,7 +213,11 @@ void initveloc(){
 	velocy[j] = prefactor*sqrt(T)*sqrt(-2.0*log(r3))*cos(2.0*M_PI*r4); //14.378 is the sqrt(k/m) 
 	velocz[j] = prefactor*sqrt(T)*sqrt(-2.0*log(r5))*cos(2.0*M_PI*r6);
 	}
-
+	else{
+	velocx[j] = 0;
+	velocy[j] = 0;
+	velocx[j] = 0;
+	}}
 	for( int k=0; k<N; k++){
 		totalx = totalx + velocx[k];// sums all of the velocities
 		totaly = totaly + velocy[k];
@@ -220,21 +225,21 @@ void initveloc(){
 	}
 	if ((totalx > 0.00001) || (totalx < -0.00001)){
 		double correctionx = totalx/N; // checks and corrections velocity to make total momentum 0
-		for (int l=0; l<N; l++){
+		for (int l=0; l<Na; l++){
 			velocx[l] = velocx[l] - correctionx;
 		}
 	}
 
 	if ((totaly > 0.00001) || (totaly < -0.00001)){
 		double correctiony = totaly/N;
-		for(int m=0; m<N; m++){
+		for(int m=0; m<Na; m++){
 			velocy[m] = velocy[m] - correctiony;
 		}
 	}
 
 	if ((totalz > 0.00001) || (totalz < -0.00001)){
 		double correctionz = totalz/N;
-		for(int n=0; n<N; n++){
+		for(int n=0; n<Na; n++){
 			velocz[n] = velocz[n] - correctionz;
 		}
 	}
@@ -333,7 +338,7 @@ void simulation(){
 	KE = 0.5*sumvsq*mAr;
      	totalE = totLJ +KE;
 
-	if (t%500 == 0){
+	if (t%1000 == 0){
         printf("%6lf,%10lf,%10lf,%10lf,%10lf,%10lf\n",(t*dt/1000), (totalE/kb/T), (totLJ/kb/T), (KE/kb/T), kintemp(sumvsq), p*conv_p);
         printCoords(t);
         }
@@ -489,9 +494,9 @@ void Forces(){
         }
     }
     for (int i=Na; i<N; i++) {
-        tubeFx[i-Na] = -ks*tubeDx[i-Na];
-        tubeFy[i-Na] = -ks*tubeDy[i-Na];
-        tubeFz[i-Na] = -ks*tubeDz[i-Na];
+        tubeFx[i-Na] =(-ks*tubeDx[i-Na]);
+        tubeFy[i-Na] =(-ks*tubeDy[i-Na]);
+        tubeFz[i-Na] =(-ks*tubeDz[i-Na]);
     }
     
     /*for(int i=0; i<N; i++){
@@ -591,13 +596,13 @@ void velScale(){
 void tubeinit(){
 	double xnot = boxx/2.0;
 	double ynot = boxy/2.0;
-	double znot = boxz/2.0;
+	double znot = boxz/2.0 - 20.0;
 	double theta = M_PI/4.0;
 	for(int i=0; i<Nt; i++){
 		theta = theta + M_PI/4.0;
 		if((i%8) == 0){
-			theta  = theta + M_PI/8.0;
-			znot  = znot + pow(2.0, (1.0/6.0))*sig;
+			theta  = theta + M_PI/10.0;
+			znot  = znot + pow(2.0, (1.0/6.0))*sig + 5.0;
 		}
 		tube[i][0] = rt*cos (theta) + xnot;
 		tube[i][1] = rt*sin (theta) + ynot;
