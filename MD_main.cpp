@@ -36,7 +36,7 @@ const double sig = 3.405; // sigma
 const double mAr = 39.9/6.02e23/1000; //Mass of an Ar atom in kg
 const double rcut = 2.5*sig; //Cutoff distance
 const double T = 105;
-const double LJcorr = 0.5*N*(N-1)*4*eps*pow(sig,6)*(pow(sig,6)/(9*pow(rcut,9))-1/(3*pow(rcut,3)));
+const double LJcorr = 4*eps*pow(sig,6)*(pow(sig,6)/(9*pow(rcut,9))-1/(3*pow(rcut,3)));
 const int totalsteps = 200000;
 const double conv_p = sig*sig*sig/eps;
 
@@ -314,7 +314,7 @@ void simulation(){
      	totalE = totLJ +KE;
 
 	if (t%500 == 0){
-        printf("%6lf,%10lf,%10lf,%10lf,%10lf,%10lf\n",(t*dt/1000), (totalE/kb/T), (totLJ/kb/T), (KE/kb/T), (kintemp(sumvsq)), p*conv_p);
+        printf("%6lf,%10lf,%10lf,%10lf,%10lf,%10lf\n",(t*dt/1000), (totalE/eps), (totLJ/eps), (KE/eps), (kintemp(sumvsq)/eps*kb), p*conv_p);
         printCoords(t);
         }
 
