@@ -18,12 +18,12 @@ using namespace std;
 
 //Constants
 const double kb = 1.38065e-33; //A^2 kg /fs^2 / K  Adam: Trust me leave it like this for now
-const double V = 10659.0;//Volume of the Box
+const double V = 6560.0;//Volume of the Box
 const double boxl = 10.0/3.0 * pow(V,double(1.0/3.0));//In Angströms
 const double boxx = 9.0/20.0 * boxl;
 const double boxy = 8.0/20.0 * boxl;
 const double boxz = 3.0/20.0 * boxl;
-const double r = boxx/10.0; //Distance from one particle to another.  We have to go redo the y and z directions at some point
+const double r = boxx/9.0; //Distance from one particle to another.  We have to go redo the y and z directions at some point
 const double rh = r/2.0;
 const int N = 216; //Number of particles
 const int Nmax = N/3; //Maximum number of particles per plane
@@ -35,7 +35,7 @@ const double eps = 119.8*kb; //*0.001380649; // epsilon
 const double sig = 3.405; // sigma
 const double mAr = 39.9/6.02e23/1000; //Mass of an Ar atom in kg
 const double rcut = 2.5*sig; //Cutoff distance
-const double T = 105;
+const double T = 119.8;
 const double LJcorr = 4*eps*pow(sig,6)*(pow(sig,6)/(9*pow(rcut,9))-1/(3*pow(rcut,3)));
 const int totalsteps = 200000;
 const double conv_p = sig*sig*sig/eps;
@@ -92,9 +92,9 @@ void pressure();
 int main(){
 	genCoords();
     //cout << boxx << " " << boxy << " " << boxz << " " << boxl << " ";
-	//printCoords();
+//	printCoords();
 	initveloc();
-    velScale();
+    //velScale();
 	//printVel();
 	printf( "Time(ps),TotalE,PE,KE,kintemp,pressure\n");
 	simulation();
@@ -507,11 +507,12 @@ void pressure(){
 		}
 	}
 	virial = virial/3/V;// Since we are using an attractive potential the virial must always be negative
-	if((totLJ < 0) && (virial < 0)){p = (N*kb*T/V) - virial;}
+	p = (N*kb*t/V) - virial;
+/*	if((totLJ < 0) && (virial < 0)){p = (N*kb*T/V) - virial;}
 	else if((totLJ < 0) && (virial > 0)){p = (N*kb*T/V) + virial;}
     else if((totLJ > 0) && (virial < 0)){p = (N*kb*T/V) + virial;}
 	else if((totLJ > 0) && (virial > 0)){p = (N*kb*T/V) - virial;}
-    else {p = (N*kb*T/V);}
+    else {p = (N*kb*T/V);}*/
 }
 
 void velScale(){
